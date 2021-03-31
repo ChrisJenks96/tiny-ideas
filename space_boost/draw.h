@@ -16,7 +16,7 @@ extern bool bQuit;
 //init all main systems and gl
 bool drawInit();
 //clear colour and color bit buffer
-void drawClear();
+void drawClear(float r, float g, float b);
 void drawSwapBuffers();
 void drawQuad(int iX, int iY, int sX, int sY, int sX2, int sY2);
 //unload all main systems

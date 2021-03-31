@@ -53,9 +53,9 @@ bool drawInit()
 	return true;
 }
 
-void drawClear()
+void drawClear(float r, float g, float b)
 {
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(r, g, b, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
