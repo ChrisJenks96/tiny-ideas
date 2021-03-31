@@ -2,13 +2,12 @@
 
 GLFWwindow* pWindow = 0;
 bool bQuit = true;
+bool bKeys[256];
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-	{
-		bQuit = true;
-	}
+	//false if GLFW_RELEASE
+	bKeys[key] = (action == GLFW_PRESS || action == GLFW_REPEAT) ? true : false;
 }
 
 static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
@@ -65,16 +64,16 @@ void drawSwapBuffers()
 	glfwPollEvents();
 }
 
-void drawQuad(int iX, int iY, int sX, int sY, int sX2, int sY2)
+void drawQuad(float iX, float iY, float sX, float sY, float sX2, float sY2)
 {
 	//flip y
 	iY = (SCR_HEIGHT - iY) - sY2;
 
 	glBegin(GL_QUADS);
-	glTexCoord2i(0,0); glVertex2i(iX + sX, iY + sY);
-	glTexCoord2i(1,0); glVertex2i(iX + sX2, iY +sY);
-	glTexCoord2i(1,1); glVertex2i(iX + sX2, iY +sY2);
-	glTexCoord2i(0,1); glVertex2i(iX + sX, iY +sY2);
+	glTexCoord2i(0,0); glVertex2f(iX + sX, iY + sY);
+	glTexCoord2i(1,0); glVertex2f(iX + sX2, iY +sY);
+	glTexCoord2i(1,1); glVertex2f(iX + sX2, iY +sY2);
+	glTexCoord2i(0,1); glVertex2f(iX + sX, iY +sY2);
 	glEnd();
 }
 

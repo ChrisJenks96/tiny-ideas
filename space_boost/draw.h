@@ -1,24 +1,17 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdbool.h>
-
-#include <GL/gl.h>
-#define GLFW_DLL
-#include <GLFW/glfw3.h>
-
-#define SCR_WIDTH 640
-#define SCR_HEIGHT 480
+#include "global.h"
 
 extern GLFWwindow* pWindow;
 extern bool bQuit;
+extern bool bKeys[256];
 
 //init all main systems and gl
 bool drawInit();
 //clear colour and color bit buffer
 void drawClear(float r, float g, float b);
 void drawSwapBuffers();
-void drawQuad(int iX, int iY, int sX, int sY, int sX2, int sY2);
+void drawQuad(float iX, float iY, float sX, float sY, float sX2, float sY2);
 //unload all main systems
 void drawFree();
 GLuint drawTextureInit(unsigned char* pBuffer, int iW, int iH);
