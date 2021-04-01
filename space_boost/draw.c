@@ -112,12 +112,12 @@ void drawText(float fX, float fY, float fQuadSize, const char* cStr)
 	while (*cStr != '\0')
 	{
 		uint16_t ucStrCharVal = (*cStr) - 32; //ascii val to bitmap index
-		float sX = (ucStrCharVal % FONT_CHARS_PER_ROW) * max;
-		float sY = (ucStrCharVal / FONT_CHARS_PER_ROW) * max;
+		float fUVX = (ucStrCharVal % FONT_CHARS_PER_ROW) * max;
+		float fUVY = (ucStrCharVal / FONT_CHARS_PER_ROW) * max;
 
 		drawQuadSection(fX, fY, FONT_SIZE, FONT_SIZE, //pos and font details
 			fQuadSize, fQuadSize, //the quad size
-			sX, sY, sX+max, sY+max); //the tex coords offset
+			fUVX, fUVY, fUVX+max, fUVY+max); //the tex coords offset
 
 		fX += fQuadSize;
 		if (fX >= sMaxCharInRow)

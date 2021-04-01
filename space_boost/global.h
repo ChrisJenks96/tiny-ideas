@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <GL/gl.h>
 #define GLFW_DLL
@@ -17,6 +18,7 @@
 //TEXTURE RELATED....
 
 #define SHIP_SIZE 32
+#define BOOST_SIZE 32
 
 #define FUELBAR_SIZE_X 48
 #define FUELBAR_SIZE_Y 16

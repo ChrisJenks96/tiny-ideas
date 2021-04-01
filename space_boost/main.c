@@ -5,6 +5,7 @@
 #include "ship.h"
 #include "fuelbar.h"
 #include "font.h"
+#include "boost.h"
 
 static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
 {
@@ -51,6 +52,12 @@ int main(int argc, char** argv)
 	//GL cam stuff...
 	float fCamX = 0.0f, fCamY = 0.0f;
 	
+	char cFontAltitudeText[128], cFontHSText[128];
+
+	//load the high score for the game in here...
+	int iCurrentHighScore = 0;
+	int iCurrentAltitude = 0;
+
 	double dNowTime, dLastTime;
 	float fDeltaTime;
 
@@ -58,6 +65,7 @@ int main(int argc, char** argv)
 	GLuint uiT1 = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
 	GLuint uiT2 = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
 	GLuint uiT3 = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
+	GLuint uiT4 = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
 	
 	dLastTime = 0;
 
@@ -79,23 +87,40 @@ int main(int argc, char** argv)
 		//update the camera relative to the ships x/y
 		cameraUpdate(&fCamX, &fCamY, &Ship1, fDeltaTime);
 
+		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) / 10.0f);
+
+		iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
+		if (iCurrentAltitude > iCurrentHighScore)
+		{
+			iCurrentHighScore = iCurrentAltitude;
+		}
+
+		memset(&cFontAltitudeText[0], 0, 128);
+		memset(&cFontHSText[0], 0, 128);
+		sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
+		sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
+
 		//rendering
+
 		drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
+
+		drawTextureBind(uiT4);
+		drawQuad(HALF_SCR_HEIGHT + SHIP_SIZE, 110, BOOST_SIZE, BOOST_SIZE);
 
 		drawTextureBind(uiT1);
 		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE);
 
 		drawTextureBind(uiT2);
-		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) / 10.0f)+1;
 		for (int i = 0; i < iFuelCellsRemaining; i++)
 		{
 			drawQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
 		}
 
 		drawTextureBind(uiT3);
-		drawText(10, 30 + fCamY, 16, "HIGH SCORE: ");
-
+		drawText(10, 30 + fCamY, 16, cFontAltitudeText);
+		drawText(10, 50 + fCamY, 16, cFontHSText);
+		
 		drawSwapBuffers();
 
 		//printf("dt: %f\n", fDeltaTime);
@@ -103,6 +128,9 @@ int main(int argc, char** argv)
 	}
 
 	drawTextureFree(uiT1);
+	drawTextureFree(uiT2);
+	drawTextureFree(uiT3);
+	drawTextureFree(uiT4);
 	drawFree();
 	return 0;
 }
