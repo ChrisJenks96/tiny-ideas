@@ -8,7 +8,7 @@
 
 #Ubuntu prereqs:
 	#mesa-common-dev
-	#ibglfw3-dev
+	#libglfw3-dev
 
 CC = gcc
 

@@ -9,7 +9,7 @@ extern bool bKeys[256];
 //init all main systems and gl
 bool drawInit();
 //clear colour and color bit buffer
-void drawClear(float r, float g, float b);
+void drawClear(float fR, float fG, float fB, float fCamX, float fCamY);
 void drawSwapBuffers();
 void drawQuad(float iX, float iY, float sX, float sY, float sX2, float sY2);
 //unload all main systems

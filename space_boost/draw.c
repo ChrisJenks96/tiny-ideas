@@ -47,15 +47,19 @@ bool drawInit()
 
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_TEXTURE_2D);
-	glOrtho(0.0, (double)SCR_WIDTH, 0.0, (double)SCR_HEIGHT, 0.0, 1.0);
 
 	return true;
 }
 
-void drawClear(float r, float g, float b)
+void drawClear(float fR, float fG, float fB, float fCamX, float fCamY)
 {
-	glClearColor(r, g, b, 0.0f);
+	glClearColor(fR, fG, fB, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, (double)SCR_WIDTH, 0.0, (double)SCR_HEIGHT, 0.0, 1.0);
+	glTranslatef(fCamX, fCamY, 0.0f);
 }
 
 void drawSwapBuffers()

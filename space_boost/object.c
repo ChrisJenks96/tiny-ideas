@@ -35,6 +35,4 @@ void moveableObjectUpdate(sMoveableObject* pMO, bool* pKeys, float fDt)
 		pMO->mY = SCR_HEIGHT - pMO->mSize;
 		pMO->mVel = 0.0f;
 	}
-
-	printf("%f\n", pMO->mY);
 }
