@@ -4,6 +4,7 @@
 //images in header format
 #include "ship.h"
 #include "fuelbar.h"
+#include "font.h"
 
 static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
 {
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
 	//load statically held textures
 	GLuint uiT1 = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
 	GLuint uiT2 = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+	GLuint uiT3 = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
 	
 	dLastTime = 0;
 
@@ -82,14 +84,17 @@ int main(int argc, char** argv)
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
 
 		drawTextureBind(uiT1);
-		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, 10, 10, 10 + SHIP_SIZE, 10 + SHIP_SIZE);
+		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE);
 
 		drawTextureBind(uiT2);
 		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) / 10.0f)+1;
 		for (int i = 0; i < iFuelCellsRemaining; i++)
 		{
-			drawQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, 0, 0, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+			drawQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
 		}
+
+		drawTextureBind(uiT3);
+		drawText(10, 30 + fCamY, 16, "HIGH SCORE: ");
 
 		drawSwapBuffers();
 

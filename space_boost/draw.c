@@ -68,17 +68,66 @@ void drawSwapBuffers()
 	glfwPollEvents();
 }
 
-void drawQuad(float iX, float iY, float sX, float sY, float sX2, float sY2)
+void drawQuad(float fX, float fY, float fX2, float fY2)
 {
 	//flip y
-	iY = (SCR_HEIGHT - iY) - sY2;
+	fY = (SCR_HEIGHT - fY) - fY2;
 
 	glBegin(GL_QUADS);
-	glTexCoord2i(0,0); glVertex2f(iX + sX, iY + sY);
-	glTexCoord2i(1,0); glVertex2f(iX + sX2, iY +sY);
-	glTexCoord2i(1,1); glVertex2f(iX + sX2, iY +sY2);
-	glTexCoord2i(0,1); glVertex2f(iX + sX, iY +sY2);
+	glTexCoord2i(0,0); glVertex2f(fX, fY);
+	glTexCoord2i(1,0); glVertex2f(fX + fX2, fY);
+	glTexCoord2i(1,1); glVertex2f(fX + fX2, fY + fY2);
+	glTexCoord2i(0,1); glVertex2f(fX, fY + fY2);
 	glEnd();
+}
+
+void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
+	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2)
+{
+	//correction to get y on the correct position
+	fY = (SCR_HEIGHT - fY) - fY2;
+
+	//correct the y axis on the tex coords also
+	fTCY = fHeight - fTCY;
+	fTCY2 = fHeight - fTCY2;
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(fTCX,fTCY2); glVertex2f(fX, fY);
+	glTexCoord2f(fTCX2,fTCY2); glVertex2f(fX + fX2, fY);
+	glTexCoord2f(fTCX2,fTCY); glVertex2f(fX + fX2, fY + fY2);
+	glTexCoord2f(fTCX,fTCY); glVertex2f(fX, fY + fY2);
+	glEnd();
+}
+
+void drawText(float fX, float fY, float fQuadSize, const char* cStr)
+{
+	float fOriginalfX = fX;
+
+	//the size of each quad in GL
+	float sMaxCharInRow = fX + (FONT_MAX_CHARS_PER_ROW * fQuadSize);
+
+	//width and height are the same, will always be multiple of 8
+	float max = (1.0f / FONT_SIZE) * FONT_CHAR_SIZE;
+
+	while (*cStr != '\0')
+	{
+		uint16_t ucStrCharVal = (*cStr) - 32; //ascii val to bitmap index
+		float sX = (ucStrCharVal % FONT_CHARS_PER_ROW) * max;
+		float sY = (ucStrCharVal / FONT_CHARS_PER_ROW) * max;
+
+		drawQuadSection(fX, fY, FONT_SIZE, FONT_SIZE, //pos and font details
+			fQuadSize, fQuadSize, //the quad size
+			sX, sY, sX+max, sY+max); //the tex coords offset
+
+		fX += fQuadSize;
+		if (fX >= sMaxCharInRow)
+		{
+			fX = fOriginalfX;
+			fY += fQuadSize;
+		}
+
+		cStr++;
+	}
 }
 
 void drawFree()
@@ -96,7 +145,8 @@ GLuint drawTextureInit(unsigned char* pBuffer, int iW, int iH)
 	GLuint uiTID;
 	glGenTextures(1, &uiTID);
 	glBindTexture(GL_TEXTURE_2D, uiTID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, iW, iH, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, pBuffer+54);
 	return uiTID;
 }

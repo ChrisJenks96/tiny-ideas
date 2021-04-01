@@ -21,6 +21,11 @@
 #define FUELBAR_SIZE_X 48
 #define FUELBAR_SIZE_Y 16
 
+#define FONT_SIZE 128.0f
+#define FONT_CHARS_PER_ROW 8
+#define FONT_CHAR_SIZE (FONT_SIZE / FONT_CHARS_PER_ROW) //128px wide with 8 chars per row
+#define FONT_MAX_CHARS_PER_ROW 30
+
 //GAME RELATED...
 
 #define BKG_FADE_SPEED 0.1f
