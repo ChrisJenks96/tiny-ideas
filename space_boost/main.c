@@ -1,26 +1,36 @@
 #include "draw.h"
 #include "object.h"
+
+//images in header format
 #include "ship.h"
+#include "fuelbar.h"
 
-#define SHIP_SIZE 32
-#define BKG_FADE_SPEED 0.1f
-
-static void backgroundUpdate(float* pBkgFadeFactor, sMoveableObject* pShip, float fDt)
+static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
 {
-	if (pShip->mY < HALF_SCR_HEIGHT)
+	//if the camera has centralised on the ship, then start fading into the stars
+	if (pShip->mMovObj.mY < HALF_SCR_HEIGHT)
 	{
 		if (*pBkgFadeFactor > 0.01f)
 		{
-			*pBkgFadeFactor -= (BKG_FADE_SPEED * (pShip->mVel / MAX_VEL)) * fDt;
+			*pBkgFadeFactor -= (BKG_FADE_SPEED * (pShip->mMovObj.mVel / MAX_VEL)) * fDt;
 		}	
 	}
+
+	//if we're dropping back down to the surface, bring the colour back
+	/*else
+	{
+		if (*pBkgFadeFactor < 1.0f)
+		{
+			*pBkgFadeFactor += BKG_FADE_SPEED * fDt;
+		}
+	}*/
 }
 
-static void cameraUpdate(float* pX, float* pY, sMoveableObject* pShip, float fDt)
+static void cameraUpdate(float* pX, float* pY, sMainShipObject* pShip, float fDt)
 {
-	if (pShip->mY <= HALF_SCR_HEIGHT)
+	if (pShip->mMovObj.mY <= HALF_SCR_HEIGHT)
 	{
-		*pY = pShip->mY - HALF_SCR_HEIGHT;
+		*pY = pShip->mMovObj.mY - HALF_SCR_HEIGHT;
 	}
 }
 
@@ -32,15 +42,20 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	sMoveableObject Ship1 = moveableObjectCreate(SHIP_SIZE, HALF_SCR_WIDTH - SHIP_SIZE, 
-		SCR_HEIGHT - SHIP_SIZE, 4.0f);
+	int iFuelCellsRemaining = MAX_FUEL_CELLS;
+
+	sMainShipObject Ship1 = mainShipObjectCreate();
+	//fading from light into dark when the shuttle climbs
 	float fBkgFadeFactor = 1.0f;
+	//GL cam stuff...
 	float fCamX = 0.0f, fCamY = 0.0f;
+	
 	double dNowTime, dLastTime;
 	float fDeltaTime;
 
 	//load statically held textures
 	GLuint uiT1 = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
+	GLuint uiT2 = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
 	
 	dLastTime = 0;
 
@@ -55,7 +70,7 @@ int main(int argc, char** argv)
 		bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
 
 		//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
-		moveableObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+		mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
 
 		backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
 
@@ -67,7 +82,14 @@ int main(int argc, char** argv)
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
 
 		drawTextureBind(uiT1);
-		drawQuad(Ship1.mX, Ship1.mY, 10, 10, 10 + SHIP_SIZE, 10 + SHIP_SIZE);
+		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, 10, 10, 10 + SHIP_SIZE, 10 + SHIP_SIZE);
+
+		drawTextureBind(uiT2);
+		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) / 10.0f)+1;
+		for (int i = 0; i < iFuelCellsRemaining; i++)
+		{
+			drawQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, 0, 0, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+		}
 
 		drawSwapBuffers();
 

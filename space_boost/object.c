@@ -11,9 +11,9 @@ sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed
 	return obj;
 }
 
-void moveableObjectUpdate(sMoveableObject* pMO, bool* pKeys, float fDt)
+void moveableObjectUpdate(sMoveableObject* pMO, bool bCanAcc, bool* pKeys, float fDt)
 {
-	if (pKeys[GLFW_KEY_W])
+	if (pKeys[GLFW_KEY_W] && bCanAcc)
 	{
 		pMO->mVel += pMO->mVelSpeed * fDt;
 	}
@@ -35,4 +35,26 @@ void moveableObjectUpdate(sMoveableObject* pMO, bool* pKeys, float fDt)
 		pMO->mY = SCR_HEIGHT - pMO->mSize;
 		pMO->mVel = 0.0f;
 	}
+}
+
+sMainShipObject mainShipObjectCreate()
+{
+	sMainShipObject obj;
+	obj.mMovObj.mSize = SHIP_SIZE;
+	obj.mMovObj.mX = HALF_SCR_HEIGHT + SHIP_SIZE;
+	obj.mMovObj.mY = SCR_HEIGHT - SHIP_SIZE;
+	obj.mMovObj.mVel = 0.0f;
+	obj.mMovObj.mVelSpeed = 4.0f;
+	obj.mFuelRemaining = FUEL_START_VALUE;
+	return obj;
+}
+
+void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
+{
+	if (pKeys[GLFW_KEY_W])
+	{
+		pMSO->mFuelRemaining -= FUEL_CONSUMPTION_RATE * fDt;
+	}
+
+	moveableObjectUpdate(&pMSO->mMovObj, !(pMSO->mFuelRemaining < 0.1f), pKeys, fDt);
 }

@@ -2,9 +2,6 @@
 
 #include "global.h"
 
-#define MAX_VEL 20.0f
-#define GRAVITY_Y_VAL 5.0f
-
 typedef struct sMoveableObject
 {
 	int mSize;
@@ -14,4 +11,13 @@ typedef struct sMoveableObject
 } sMoveableObject;
 
 sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed);
-void moveableObjectUpdate(sMoveableObject* pMO, bool* pKeys, float fDt);
+void moveableObjectUpdate(sMoveableObject* pMO, bool bCanAcc, bool* pKeys, float fDt);
+
+typedef struct sMainShipObject
+{
+	sMoveableObject mMovObj;
+	float mFuelRemaining;
+} sMainShipObject;
+
+sMainShipObject mainShipObjectCreate();
+void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt);
