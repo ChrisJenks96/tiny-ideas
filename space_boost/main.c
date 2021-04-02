@@ -36,6 +36,46 @@ static void cameraUpdate(float* pX, float* pY, sMainShipObject* pShip, float fDt
 	}
 }
 
+//get the start and end arr id's for rendering the boost sprites
+static void boostGetStartEndID(float* pCamY, int* iStart, int* iEnd)
+{
+	bool bFoundFirst = false;
+	int iBoostCounter = *iStart;
+	float fCurrentBoost;
+	float fBoundaryY1;
+	float fBoundaryY2;
+
+	while (iBoostCounter < BOOST_NUM)
+	{
+		fCurrentBoost = -BOOST_Y_INC * iBoostCounter;
+		fBoundaryY1 = *pCamY - BOOST_SIZE; //top
+		fBoundaryY2 = fBoundaryY1 + SCR_HEIGHT + BOOST_SIZE; //bottom
+
+		if (fCurrentBoost >= fBoundaryY1 && fCurrentBoost <= fBoundaryY2)
+		{
+			if (!bFoundFirst)
+			{
+				*iStart = iBoostCounter;
+				bFoundFirst = true;
+			}
+
+			*iEnd = iBoostCounter+1;
+		}
+
+		else
+		{
+			//printf("Start:%i End:%i\n", *iStart, *iEnd);
+			//if a boost sprite is out of viewport bounds and beyond end rendering boost id, then kill the loop
+			if (iBoostCounter > *iEnd)
+			{
+				break;
+			}
+		}
+		
+		iBoostCounter++;
+	}
+}
+
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -57,6 +97,7 @@ int main(int argc, char** argv)
 	//load the high score for the game in here...
 	int iCurrentHighScore = 0;
 	int iCurrentAltitude = 0;
+	int iBoostStartID = 0, iBoostEndID = 0;
 
 	double dNowTime, dLastTime;
 	float fDeltaTime;
@@ -81,13 +122,21 @@ int main(int argc, char** argv)
 
 		//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
 		mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+		
+		//get the boost sprite to render in the current viewport
+		boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
+
+		if (moveableObjectCollisionUpdate(&Ship1.mMovObj, HALF_SCR_HEIGHT + SHIP_SIZE, 110, BOOST_SIZE))
+		{
+			//
+		}
 
 		backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
 
 		//update the camera relative to the ships x/y
 		cameraUpdate(&fCamX, &fCamY, &Ship1, fDeltaTime);
 
-		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) / 10.0f);
+		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) * 0.1f);
 
 		iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
 		if (iCurrentAltitude > iCurrentHighScore)
@@ -106,7 +155,10 @@ int main(int argc, char** argv)
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
 
 		drawTextureBind(uiT4);
-		drawQuad(HALF_SCR_HEIGHT + SHIP_SIZE, 110, BOOST_SIZE, BOOST_SIZE);
+		for (int i = iBoostStartID; i < iBoostEndID; i++)
+		{
+			drawQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE);
+		}
 
 		drawTextureBind(uiT1);
 		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE);

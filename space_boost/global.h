@@ -37,3 +37,14 @@
 #define FUEL_START_VALUE (MAX_FUEL_CELLS * 10.0f)
 #define MAX_VEL 20.0f
 #define GRAVITY_Y_VAL 5.0f
+
+#define BOOST_NUM 256
+#define BOOST_Y_INC 200
+
+//used to get a 0-255 to 0-SCR_WIDTH on boost x values
+#define BOOST_EXTEND_X SCR_WIDTH / 255.0f
+
+static uint8_t cBoostXOffsets[BOOST_NUM] = 
+{
+	115, 130, 23, 201, 30, 75, 103
+};
