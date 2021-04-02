@@ -47,13 +47,15 @@ bool drawInit()
 
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 	return true;
 }
 
 void drawClear(float fR, float fG, float fB, float fCamX, float fCamY)
 {
-	glClearColor(fR, fG, fB, 0.0f);
+	glClearColor(fR, fG, fB, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glMatrixMode(GL_PROJECTION);
@@ -140,14 +142,14 @@ void drawFree()
 	glfwTerminate();
 }
 
-GLuint drawTextureInit(unsigned char* pBuffer, int iW, int iH)
+GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH)
 {
 	GLuint uiTID;
 	glGenTextures(1, &uiTID);
 	glBindTexture(GL_TEXTURE_2D, uiTID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, iW, iH, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, pBuffer+54);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, iW, iH, 0, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
 	return uiTID;
 }
 

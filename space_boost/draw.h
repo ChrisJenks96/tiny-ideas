@@ -17,6 +17,6 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 void drawText(float fX, float fY, float fQuadSize, const char* cStr);
 //unload all main systems
 void drawFree();
-GLuint drawTextureInit(unsigned char* pBuffer, int iW, int iH);
+GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);
 void drawTextureBind(GLuint uiTID);
 void drawTextureFree(GLuint uiTID);
