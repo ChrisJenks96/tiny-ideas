@@ -126,9 +126,13 @@ int main(int argc, char** argv)
 		//get the boost sprite to render in the current viewport
 		boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
 
-		if (moveableObjectCollisionUpdate(&Ship1.mMovObj, HALF_SCR_HEIGHT + SHIP_SIZE, 110, BOOST_SIZE))
+		//collision checks against the existing boost sprites
+		for (int i = iBoostStartID; i < iBoostEndID; i++)
 		{
-			//
+			if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
+			{
+				//do collisiony stuff here
+			}
 		}
 
 		backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
