@@ -1,12 +1,15 @@
 #include "object.h"
 
+float hitExpiryTimer = 0.0f;
+
 sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed, float fMaxVal)
 {
 	sMoveableObject obj;
 	obj.mSize = iSize;
 	obj.mX = fX;
 	obj.mY = fY;
-	obj.mVel = 0.0f;
+	obj.mVelX = 0.0f;
+	obj.mVelY = 0.0f;
 	obj.mVelSpeed = fSpeed;
 	obj.mVelMax = fMaxVal;
 	obj.mIsCollidable = true;
@@ -17,17 +20,17 @@ void moveableObjectUpdate(sMoveableObject* pMO, bool bCanAcc, bool* pKeys, float
 {
 	if (pKeys[GLFW_KEY_W] && bCanAcc)
 	{
-		pMO->mVel += pMO->mVelSpeed * fDt;
+		pMO->mVelY += pMO->mVelSpeed * fDt;
 	}
 
 	else
 	{
-		pMO->mVel -= GRAVITY_Y_VAL * fDt;
+		pMO->mVelY -= GRAVITY_Y_VAL * fDt;
 	}
 
-	if (pMO->mVel > pMO->mVelMax)
+	if (pMO->mVelY > pMO->mVelMax)
 	{
-		pMO->mVel = pMO->mVelMax;
+		pMO->mVelY = pMO->mVelMax;
 	}
 }
 
@@ -48,6 +51,7 @@ sMainShipObject mainShipObjectCreate()
 	obj.mMovObj = moveableObjectCreate(SHIP_SIZE, HALF_SCR_WIDTH - SHIP_SIZE, 
 		SCR_HEIGHT - SHIP_SIZE, 4.0f, 20.0f);
 	obj.mFuelRemaining = FUEL_START_VALUE;
+	obj.mHitObject = false;
 	return obj;
 }
 
@@ -60,11 +64,23 @@ void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 
 	moveableObjectUpdate(&pMSO->mMovObj, !(pMSO->mFuelRemaining < 0.1f), pKeys, fDt);
 
-	pMSO->mMovObj.mY -= pMSO->mMovObj.mVel * fDt;
+	pMSO->mMovObj.mX -= pMSO->mMovObj.mVelX * fDt;
+	pMSO->mMovObj.mY -= pMSO->mMovObj.mVelY * fDt;
 
 	if (pMSO->mMovObj.mY > (SCR_HEIGHT - pMSO->mMovObj.mSize))
 	{
 		pMSO->mMovObj.mY = SCR_HEIGHT - pMSO->mMovObj.mSize;
-		pMSO->mMovObj.mVel = 0.0f;
+		pMSO->mMovObj.mVelY = 0.0f;
+	}
+
+	//make sure to take the boost hit object collision off
+	if (pMSO->mHitObject)
+	{
+		hitExpiryTimer += 1.0f * fDt;
+		if (hitExpiryTimer > 4.0f)
+		{
+			pMSO->mHitObject = false;
+			hitExpiryTimer = 0.0f;
+		}
 	}
 }

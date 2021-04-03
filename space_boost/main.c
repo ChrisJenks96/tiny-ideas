@@ -14,7 +14,7 @@ static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, floa
 	{
 		if (*pBkgFadeFactor > 0.01f)
 		{
-			*pBkgFadeFactor -= (BKG_FADE_SPEED * (pShip->mMovObj.mVel / MAX_VEL)) * fDt;
+			*pBkgFadeFactor -= (BKG_FADE_SPEED * (pShip->mMovObj.mVelY / MAX_VEL)) * fDt;
 		}	
 	}
 
@@ -76,19 +76,18 @@ static void boostGetStartEndID(float* pCamY, int* iStart, int* iEnd)
 	}
 }
 
-static void boostRotateAll(float* fRot, float fDt)
+static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 {
-	if (*fRot > BOOST_MAX_ROT)
+	if (!pShip->mHitObject)
 	{
-		*fRot += 1.0f * fDt;
-	}
+		pShip->mHitObject = true;
 
-	else if (*fRot < BOOST_MIN_ROT)
-	{
-		*fRot -= 1.0f * fDt;
+		//get normalised dir of the boost we hit
+		pShip->mMovObj.mVelX = -cosf(*fBoostRot) * MAX_VEL;
+		pShip->mMovObj.mVelY = -sinf(*fBoostRot) * MAX_VEL;
+		printf("pShip->mMovObj.mVelX : %f\n", pShip->mMovObj.mVelX);
+		printf("pShip->mMovObj.mVelY : %f\n", pShip->mMovObj.mVelY);
 	}
-
-	glRotatef(*fRot, 0.0f, 0.0f, 1.0f);
 }
 
 int main(int argc, char** argv)
@@ -149,7 +148,8 @@ int main(int argc, char** argv)
 		{
 			if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
 			{
-				//do collisiony stuff here
+				//if we hit a boost sprite, then propell the ship in the direction of facing
+				boostShipTrajectoryUpdate(&Ship1, &fBoostRotation);
 			}
 		}
 
@@ -180,6 +180,9 @@ int main(int argc, char** argv)
 
 		//get the boost sprites spinning
 		fBoostRotation += 20.0f * fDeltaTime;
+		if (fBoostRotation >= 360)
+			fBoostRotation = 0;
+
 		fRotationArr[0] = fBoostRotation;
 
 		for (int i = iBoostStartID; i < iBoostEndID; i++)

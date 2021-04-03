@@ -18,7 +18,7 @@ INCLUDES =
 
 LFLAGS =
 
-LIBS = -lglfw -lGL
+LIBS = -lglfw -lGL -lm
 
 SRCS = main.c draw.c object.c
 

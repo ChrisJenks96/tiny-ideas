@@ -6,7 +6,7 @@ typedef struct sMoveableObject
 {
 	int mSize;
 	float mX, mY;
-	float mVel;
+	float mVelX, mVelY;
 	float mVelSpeed;
 	float mVelMax;
 	bool mIsCollidable;
@@ -20,7 +20,10 @@ typedef struct sMainShipObject
 {
 	sMoveableObject mMovObj;
 	float mFuelRemaining;
+	bool mHitObject;
 } sMainShipObject;
+
+extern float hitExpiryTimer;
 
 sMainShipObject mainShipObjectCreate();
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt);
