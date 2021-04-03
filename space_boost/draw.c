@@ -70,16 +70,37 @@ void drawSwapBuffers()
 	glfwPollEvents();
 }
 
-void drawQuad(float fX, float fY, float fX2, float fY2)
+void drawPushMatrix()
+{
+	glPushMatrix();
+}
+
+void drawPopMatrix()
+{
+	glPopMatrix();
+}
+
+void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 {
 	//flip y
 	fY = (SCR_HEIGHT - fY) - fY2;
 
+	float fHalfSpriteWidth = fX2 / 2.0f;
+	float fHalfSpriteHeight = fY2 / 2.0f;
+
+	glTranslatef(fX + fHalfSpriteWidth, fY + fHalfSpriteHeight, 0.0f); //translate to original point
+	glRotatef(fRotVal[0], fRotVal[1], fRotVal[2], fRotVal[3]); //rotate
+	glTranslatef(-fHalfSpriteWidth, -fHalfSpriteHeight, 0.0f); //translate to the centre of the object
+	glScalef(fX2, fY2, 1.0f);
+}
+
+void drawQuad()
+{
 	glBegin(GL_QUADS);
-	glTexCoord2i(0,0); glVertex2f(fX, fY);
-	glTexCoord2i(1,0); glVertex2f(fX + fX2, fY);
-	glTexCoord2i(1,1); glVertex2f(fX + fX2, fY + fY2);
-	glTexCoord2i(0,1); glVertex2f(fX, fY + fY2);
+	glTexCoord2i(0,0); glVertex2f(0.0f, 0.0f);
+	glTexCoord2i(1,0); glVertex2f(1.0f, 0.0f);
+	glTexCoord2i(1,1); glVertex2f(1.0f, 1.0f);
+	glTexCoord2i(0,1); glVertex2f(0.0f, 1.0f);
 	glEnd();
 }
 

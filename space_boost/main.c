@@ -76,6 +76,21 @@ static void boostGetStartEndID(float* pCamY, int* iStart, int* iEnd)
 	}
 }
 
+static void boostRotateAll(float* fRot, float fDt)
+{
+	if (*fRot > BOOST_MAX_ROT)
+	{
+		*fRot += 1.0f * fDt;
+	}
+
+	else if (*fRot < BOOST_MIN_ROT)
+	{
+		*fRot -= 1.0f * fDt;
+	}
+
+	glRotatef(*fRot, 0.0f, 0.0f, 1.0f);
+}
+
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -91,6 +106,9 @@ int main(int argc, char** argv)
 	float fBkgFadeFactor = 1.0f;
 	//GL cam stuff...
 	float fCamX = 0.0f, fCamY = 0.0f;
+	//for the glRotatef function
+	float fBoostRotation = 0.0f;
+	float fRotationArr[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 	
 	char cFontAltitudeText[128], cFontHSText[128];
 
@@ -159,18 +177,38 @@ int main(int argc, char** argv)
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
 
 		drawTextureBind(uiT4);
+
+		//get the boost sprites spinning
+		fBoostRotation += 20.0f * fDeltaTime;
+		fRotationArr[0] = fBoostRotation;
+
 		for (int i = iBoostStartID; i < iBoostEndID; i++)
 		{
-			drawQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE);
+			drawPushMatrix();
+			drawTransformQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE,
+				fRotationArr);
+			drawQuad();
+			drawPopMatrix();
 		}
 
+		//reset the rotation back to the original value for rendering the rest of the objects
+		fRotationArr[0] = 0.0f;
+
 		drawTextureBind(uiT1);
-		drawQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE);
+		drawPushMatrix();
+		drawTransformQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE,
+				fRotationArr);
+		drawQuad();
+		drawPopMatrix();
 
 		drawTextureBind(uiT2);
 		for (int i = 0; i < iFuelCellsRemaining; i++)
 		{
-			drawQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+			drawPushMatrix();
+			drawTransformQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y,
+				fRotationArr);
+			drawQuad();
+			drawPopMatrix();
 		}
 
 		drawTextureBind(uiT3);

@@ -11,7 +11,10 @@ bool drawInit();
 //clear colour and color bit buffer
 void drawClear(float fR, float fG, float fB, float fCamX, float fCamY);
 void drawSwapBuffers();
-void drawQuad(float fX, float fY, float fX2, float fY2);
+void drawPushMatrix();
+void drawPopMatrix();
+void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal);
+void drawQuad();
 void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
 void drawText(float fX, float fY, float fQuadSize, const char* cStr);

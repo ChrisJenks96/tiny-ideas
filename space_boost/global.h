@@ -40,11 +40,13 @@
 
 #define BOOST_NUM 256
 #define BOOST_Y_INC 200
+#define BOOST_MIN_ROT 35
+#define BOOST_MAX_ROT 155
 
 //used to get a 0-255 to 0-SCR_WIDTH on boost x values
 #define BOOST_EXTEND_X SCR_WIDTH / 255.0f
 
 static uint8_t cBoostXOffsets[BOOST_NUM] = 
 {
-	115, 130, 23, 201, 30, 75, 103
+	115, 130, 23, 201, 30, 75, 103, 32
 };
