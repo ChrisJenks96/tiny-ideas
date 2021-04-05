@@ -122,7 +122,7 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	glEnd();
 }
 
-void drawText(float fX, float fY, float fQuadSize, const char* cStr)
+void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr)
 {
 	float fOriginalfX = fX;
 
@@ -142,7 +142,7 @@ void drawText(float fX, float fY, float fQuadSize, const char* cStr)
 			fQuadSize, fQuadSize, //the quad size
 			fUVX, fUVY, fUVX+max, fUVY+max); //the tex coords offset
 
-		fX += fQuadSize;
+		fX += fTextSepSize;
 		if (fX >= sMaxCharInRow)
 		{
 			fX = fOriginalfX;

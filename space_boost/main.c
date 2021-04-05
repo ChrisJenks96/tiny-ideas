@@ -87,12 +87,15 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 			//(pShip->mMovObj.mVelY*pShip->mMovObj.mVelY));
 		//printf("pfMagnitude : %f\n", fMagnitude);
 
-		//fucked... fix it...
-		pShip->mMovObj.mVelX = cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
-		pShip->mMovObj.mVelY = -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelX = -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelY = cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
 
-		printf("pShip->mMovObj.mVelX : %f\n", pShip->mMovObj.mVelX);
-		printf("pShip->mMovObj.mVelY : %f\n", pShip->mMovObj.mVelY);
+		//add some fuel to the repo
+		pShip->mFuelRemaining += FUEL_SINGLE_VALUE * 2;
+		if (pShip->mFuelRemaining > (FUEL_SINGLE_VALUE * MAX_FUEL_CELLS))
+		{
+			pShip->mFuelRemaining = FUEL_SINGLE_VALUE * MAX_FUEL_CELLS;
+		}
 	}
 }
 
@@ -164,7 +167,7 @@ int main(int argc, char** argv)
 		//update the camera relative to the ships x/y
 		cameraUpdate(&fCamX, &fCamY, &Ship1, fDeltaTime);
 
-		iFuelCellsRemaining = (int)((Ship1.mFuelRemaining - 0.1f) * 0.1f);
+		iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
 
 		iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
 		if (iCurrentAltitude > iCurrentHighScore)
@@ -221,8 +224,8 @@ int main(int argc, char** argv)
 		}
 
 		drawTextureBind(uiT3);
-		drawText(10, 30 + fCamY, 16, cFontAltitudeText);
-		drawText(10, 50 + fCamY, 16, cFontHSText);
+		drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText);
+		drawText(10, 50 + fCamY, 16, 9, cFontHSText);
 		
 		drawSwapBuffers();
 

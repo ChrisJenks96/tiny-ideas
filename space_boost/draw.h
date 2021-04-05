@@ -17,7 +17,7 @@ void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 void drawQuad();
 void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
-void drawText(float fX, float fY, float fQuadSize, const char* cStr);
+void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr);
 //unload all main systems
 void drawFree();
 GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);

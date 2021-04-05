@@ -32,7 +32,7 @@ sMainShipObject mainShipObjectCreate()
 {
 	sMainShipObject obj;
 	obj.mMovObj = moveableObjectCreate(SHIP_SIZE, HALF_SCR_WIDTH - SHIP_SIZE, 
-		SCR_HEIGHT - SHIP_SIZE, 4.0f, 20.0f);
+		SCR_HEIGHT - SHIP_SIZE, 4.0f, 30.0f);
 	obj.mFuelRemaining = FUEL_START_VALUE;
 	obj.mHitObject = false;
 	return obj;
@@ -85,5 +85,18 @@ void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 			pMSO->mHitObject = false;
 			hitExpiryTimer = 0.0f;
 		}
+	}
+
+	//prevent out of bounds
+	if ((pMSO->mMovObj.mX + SHIP_SIZE) > SCR_WIDTH)
+	{
+		pMSO->mMovObj.mVelX = 0.0f;
+		pMSO->mMovObj.mX = SCR_WIDTH - SHIP_SIZE;
+	}
+
+	if ((pMSO->mMovObj.mX) < 0)
+	{
+		pMSO->mMovObj.mVelX = 0.0f;
+		pMSO->mMovObj.mX = 0.1f;
 	}
 }
