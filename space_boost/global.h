@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #include <GL/gl.h>
 #define GLFW_DLL
@@ -42,6 +43,10 @@
 #define BOOST_Y_INC 200
 #define BOOST_MIN_ROT 35
 #define BOOST_MAX_ROT 155
+
+#define PI 3.14159265
+#define DEG_TO_RAD(x) (x * (PI / 180))
+#define RAD_TO_DEG(x) (x * (180 / PI))
 
 //used to get a 0-255 to 0-SCR_WIDTH on boost x values
 #define BOOST_EXTEND_X SCR_WIDTH / 255.0f

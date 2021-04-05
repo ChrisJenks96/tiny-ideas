@@ -13,25 +13,8 @@ sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed
 	obj.mVelSpeed = fSpeed;
 	obj.mVelMax = fMaxVal;
 	obj.mIsCollidable = true;
+	obj.mRot = 0.0f;
 	return obj;
-}
-
-void moveableObjectUpdate(sMoveableObject* pMO, bool bCanAcc, bool* pKeys, float fDt)
-{
-	if (pKeys[GLFW_KEY_W] && bCanAcc)
-	{
-		pMO->mVelY += pMO->mVelSpeed * fDt;
-	}
-
-	else
-	{
-		pMO->mVelY -= GRAVITY_Y_VAL * fDt;
-	}
-
-	if (pMO->mVelY > pMO->mVelMax)
-	{
-		pMO->mVelY = pMO->mVelMax;
-	}
 }
 
 bool moveableObjectCollisionUpdate(sMoveableObject* pMO, float fOtherPosX, float fOtherPosY, int iOtherSize)
@@ -57,12 +40,31 @@ sMainShipObject mainShipObjectCreate()
 
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 {
-	if (pKeys[GLFW_KEY_W])
+	if (pKeys[GLFW_KEY_W] && !(pMSO->mFuelRemaining < 0.1f))
 	{
+		pMSO->mMovObj.mVelY += pMSO->mMovObj.mVelSpeed * fDt;
 		pMSO->mFuelRemaining -= FUEL_CONSUMPTION_RATE * fDt;
 	}
 
-	moveableObjectUpdate(&pMSO->mMovObj, !(pMSO->mFuelRemaining < 0.1f), pKeys, fDt);
+	else
+	{
+		pMSO->mMovObj.mVelY -= GRAVITY_Y_VAL * fDt;
+	}
+
+	if (pMSO->mMovObj.mVelY > pMSO->mMovObj.mVelMax)
+	{
+		pMSO->mMovObj.mVelY = pMSO->mMovObj.mVelMax;
+	}
+
+	if (pKeys[GLFW_KEY_A])
+	{
+		pMSO->mMovObj.mVelX += pMSO->mMovObj.mVelSpeed * fDt;
+	}
+
+	if (pKeys[GLFW_KEY_D])
+	{
+		pMSO->mMovObj.mVelX -= pMSO->mMovObj.mVelSpeed * fDt;
+	}
 
 	pMSO->mMovObj.mX -= pMSO->mMovObj.mVelX * fDt;
 	pMSO->mMovObj.mY -= pMSO->mMovObj.mVelY * fDt;
@@ -71,6 +73,7 @@ void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 	{
 		pMSO->mMovObj.mY = SCR_HEIGHT - pMSO->mMovObj.mSize;
 		pMSO->mMovObj.mVelY = 0.0f;
+		pMSO->mMovObj.mVelX = 0.0f;
 	}
 
 	//make sure to take the boost hit object collision off

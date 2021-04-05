@@ -82,9 +82,15 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 	{
 		pShip->mHitObject = true;
 
-		//get normalised dir of the boost we hit
-		pShip->mMovObj.mVelX = -cosf(*fBoostRot) * MAX_VEL;
-		pShip->mMovObj.mVelY = -sinf(*fBoostRot) * MAX_VEL;
+		//get normalised dir of the boost we hit 	
+		//float fMagnitude = sqrt((pShip->mMovObj.mVelX*pShip->mMovObj.mVelX) + 
+			//(pShip->mMovObj.mVelY*pShip->mMovObj.mVelY));
+		//printf("pfMagnitude : %f\n", fMagnitude);
+
+		//fucked... fix it...
+		pShip->mMovObj.mVelX = cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelY = -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+
 		printf("pShip->mMovObj.mVelX : %f\n", pShip->mMovObj.mVelX);
 		printf("pShip->mMovObj.mVelY : %f\n", pShip->mMovObj.mVelY);
 	}

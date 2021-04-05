@@ -89,7 +89,7 @@ void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 	float fHalfSpriteHeight = fY2 / 2.0f;
 
 	glTranslatef(fX + fHalfSpriteWidth, fY + fHalfSpriteHeight, 0.0f); //translate to original point
-	glRotatef(fRotVal[0], fRotVal[1], fRotVal[2], fRotVal[3]); //rotate
+	glRotatef(-fRotVal[0], fRotVal[1], fRotVal[2], fRotVal[3]); //rotate
 	glTranslatef(-fHalfSpriteWidth, -fHalfSpriteHeight, 0.0f); //translate to the centre of the object
 	glScalef(fX2, fY2, 1.0f);
 }
