@@ -87,15 +87,80 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 			//(pShip->mMovObj.mVelY*pShip->mMovObj.mVelY));
 		//printf("pfMagnitude : %f\n", fMagnitude);
 
-		pShip->mMovObj.mVelX = -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
-		pShip->mMovObj.mVelY = cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelX += -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelY += cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
 
 		//add some fuel to the repo
-		pShip->mFuelRemaining += FUEL_SINGLE_VALUE * 2;
+		pShip->mFuelRemaining += FUEL_SINGLE_VALUE;
 		if (pShip->mFuelRemaining > (FUEL_SINGLE_VALUE * MAX_FUEL_CELLS))
 		{
 			pShip->mFuelRemaining = FUEL_SINGLE_VALUE * MAX_FUEL_CELLS;
 		}
+	}
+}
+
+static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int* pHours)
+{
+	memset(&pGameTimer[0], 0, 32);
+	*pSeconds += 1;
+
+	if (*pSeconds >= 60)
+	{
+		*pSeconds = 0;
+		*pMinutes += 1;
+	}
+
+	else if (*pMinutes >= 60)
+	{
+		*pMinutes = 0;
+		*pHours += 1;
+	}
+
+	if (*pHours < 10 && *pMinutes < 10 && *pSeconds < 10)
+	{
+		if (*pSeconds < 0)
+		{
+			sprintf(&pGameTimer[0], "TIME: -0%i:0%i:0%i", *pHours, *pMinutes, -*pSeconds);
+		}
+		else
+		{
+			sprintf(&pGameTimer[0], "TIME: 0%i:0%i:0%i", *pHours, *pMinutes, *pSeconds);
+		}
+	}
+
+	else if (*pHours < 10 && *pMinutes < 10 && *pSeconds >= 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: 0%i:0%i:%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours < 10 && *pMinutes >= 10 && *pSeconds < 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: 0%i:%i:0%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours < 10 && *pMinutes >= 10 && *pSeconds >= 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: 0%i:%i:%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours >= 10 && *pMinutes < 10 && *pSeconds < 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: %i:0%i:0%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours >= 10 && *pMinutes < 10 && *pSeconds >= 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: %i:0%i:%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours >= 10 && *pMinutes >= 10 && *pSeconds < 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: %i:%i:0%i", *pHours, *pMinutes, *pSeconds);
+	}
+
+	else if (*pHours >= 10 && *pMinutes >= 10 && *pSeconds >= 10)
+	{
+		sprintf(&pGameTimer[0], "TIME: %i:%i:%i", *pHours, *pMinutes, *pSeconds);
 	}
 }
 
@@ -118,7 +183,7 @@ int main(int argc, char** argv)
 	float fBoostRotation = 0.0f;
 	float fRotationArr[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 	
-	char cFontAltitudeText[128], cFontHSText[128];
+	char cFontAltitudeText[128], cFontHSText[128], cGameTimerText[32];
 
 	//load the high score for the game in here...
 	int iCurrentHighScore = 0;
@@ -127,6 +192,11 @@ int main(int argc, char** argv)
 
 	double dNowTime, dLastTime;
 	float fDeltaTime;
+	
+	//game countdown and t+
+	float gameTimerCounter = 0.0f;
+	int gameTimerSeconds = -5, gameTimerMinutes = 0, gameTimerHours = 0;
+	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
 
 	//load statically held textures
 	GLuint uiT1 = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
@@ -180,6 +250,14 @@ int main(int argc, char** argv)
 		sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
 		sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
 
+		gameTimerCounter += 1.0f * fDeltaTime;
+		if (gameTimerCounter > 1.0f)
+		{
+			gameTimerCounter = 0.0f;
+			gameTimerUpdate(&cGameTimerText[0], 
+				&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
+		}
+		
 		//rendering
 
 		drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
@@ -226,6 +304,7 @@ int main(int argc, char** argv)
 		drawTextureBind(uiT3);
 		drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText);
 		drawText(10, 50 + fCamY, 16, 9, cFontHSText);
+		drawText(10, 70 + fCamY, 16, 9, cGameTimerText);
 		
 		drawSwapBuffers();
 

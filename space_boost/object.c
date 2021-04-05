@@ -66,6 +66,11 @@ void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 		pMSO->mMovObj.mVelX -= pMSO->mMovObj.mVelSpeed * fDt;
 	}
 
+	if (pMSO->mMovObj.mVelX > pMSO->mMovObj.mVelMax)
+	{
+		pMSO->mMovObj.mVelX = pMSO->mMovObj.mVelMax;
+	}
+
 	pMSO->mMovObj.mX -= pMSO->mMovObj.mVelX * fDt;
 	pMSO->mMovObj.mY -= pMSO->mMovObj.mVelY * fDt;
 
@@ -80,7 +85,7 @@ void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 	if (pMSO->mHitObject)
 	{
 		hitExpiryTimer += 1.0f * fDt;
-		if (hitExpiryTimer > 4.0f)
+		if (hitExpiryTimer > BOOST_REACTIVATION_WAIT_TIME)
 		{
 			pMSO->mHitObject = false;
 			hitExpiryTimer = 0.0f;
