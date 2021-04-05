@@ -41,6 +41,7 @@
 #define GRAVITY_Y_VAL 5.0f
 
 #define BOOST_NUM 256
+#define HALF_BOOST_NUM (BOOST_NUM / 2)
 #define BOOST_Y_INC 200
 #define BOOST_MIN_ROT 35
 #define BOOST_MAX_ROT 155
@@ -88,4 +89,15 @@ static uint8_t cBoostXOffsets[BOOST_NUM] =
     1, 51, 78, 86, 123, 131, 156, 218,
     3, 10, 17, 27, 41, 75, 177, 238,
     69, 92, 120, 135, 198, 222, 238, 229
+};
+
+#define STAR_NUM 40
+
+static uint16_t cStarOffsets[STAR_NUM] = 
+{
+    4, 34, 94, 37, 111, 475, 298, 294,
+    618, 240, 285, 110, 90, 4, 390, 216,
+    582, 482, 409, 285, 120, 546, 127, 502,
+    274, 275, 600, 173, 104, 305, 278, 0,
+    600, 304, 532, 289, 580, 284, 284, 193
 };

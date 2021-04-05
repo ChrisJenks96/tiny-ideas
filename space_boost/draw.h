@@ -15,6 +15,9 @@ void drawPushMatrix();
 void drawPopMatrix();
 void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal);
 void drawQuad();
+void drawColor3f(float fR, float fG, float fB);
+void drawBox(float fX, float fY, float fX2, float fY2);
+void drawLine(float fX, float fY, float fX2, float fY2, double fThick);
 void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
 void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr);
@@ -22,4 +25,5 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 void drawFree();
 GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);
 void drawTextureBind(GLuint uiTID);
+void drawTextureUnbind();
 void drawTextureFree(GLuint uiTID);

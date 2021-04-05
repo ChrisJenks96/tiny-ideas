@@ -48,6 +48,7 @@ bool drawInit()
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+	glEnable(GL_POINT_SMOOTH);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 	return true;
@@ -80,6 +81,52 @@ void drawPopMatrix()
 	glPopMatrix();
 }
 
+void drawColor3f(float fR, float fG, float fB)
+{
+	glColor3f(fR, fG, fB);
+}
+
+void drawLine(float fX, float fY, float fX2, float fY2, double fThick)
+{
+	//flip y
+	fY = (SCR_HEIGHT - fY) - fY2;
+
+	glLineWidth(fThick);
+	
+	glBegin(GL_LINES);
+	glVertex2f(fX, fY);
+	glVertex2f(fX + fX2, fY + fY2);
+	glEnd();
+}
+
+void drawBox(float fX, float fY, float fX2, float fY2)
+{
+	fY = (SCR_HEIGHT - fY) - fY2;
+
+	glColor3f(1.0, 1.0, 1.0);
+	glLineWidth(1.0);
+	
+	glBegin(GL_LINES);
+	glVertex2f(fX, fY);
+	glVertex2f(fX + fX2, fY);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex2f(fX + fX2, fY);
+	glVertex2f(fX + fX2, fY + fY2);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex2f(fX + fX2, fY + fY2);
+	glVertex2f(fX, fY + fY2);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex2f(fX, fY + fY2);
+	glVertex2f(fX, fY);
+	glEnd();
+}
+
 void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 {
 	//flip y
@@ -89,7 +136,16 @@ void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 	float fHalfSpriteHeight = fY2 / 2.0f;
 
 	glTranslatef(fX + fHalfSpriteWidth, fY + fHalfSpriteHeight, 0.0f); //translate to original point
-	glRotatef(-fRotVal[0], fRotVal[1], fRotVal[2], fRotVal[3]); //rotate
+	if (fRotVal)
+	{
+		glRotatef(fRotVal[0], fRotVal[1], fRotVal[2], fRotVal[3]); 
+	}
+
+	else
+	{
+		glRotatef(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+	
 	glTranslatef(-fHalfSpriteWidth, -fHalfSpriteHeight, 0.0f); //translate to the centre of the object
 	glScalef(fX2, fY2, 1.0f);
 }
@@ -177,6 +233,11 @@ GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH)
 void drawTextureBind(GLuint uiTID)
 {
 	glBindTexture(GL_TEXTURE_2D, uiTID);
+}
+
+void drawTextureUnbind()
+{
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void drawTextureFree(GLuint uiTID)

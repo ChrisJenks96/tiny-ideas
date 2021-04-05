@@ -99,6 +99,28 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 	}
 }
 
+static void drawStars(float fXOffset, float* pCamY)
+{
+	int iCount = 0;
+	drawTextureUnbind();
+
+	for (int i = 0; i < STAR_NUM; i+=2)
+	{
+		//if the star is out of scope, move it to the next frame
+		if ((*pCamY+SCR_HEIGHT) < -cStarOffsets[i+1])
+		{
+			cStarOffsets[i+1] += (SCR_HEIGHT + 20);
+		}
+
+		float fSize = cBoostXOffsets[iCount++] * 0.01f;
+		drawColor3f(fSize, fSize, fSize);
+		drawPushMatrix();
+		drawTransformQuad(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1], fSize, fSize, NULL);
+		drawQuad();
+		drawPopMatrix();
+	}
+}
+
 static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int* pHours)
 {
 	memset(&pGameTimer[0], 0, 32);
@@ -217,7 +239,10 @@ int main(int argc, char** argv)
 		bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
 
 		//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
-		mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+		if (gameTimerSeconds >= 0)
+		{
+			mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+		}
 		
 		//get the boost sprite to render in the current viewport
 		boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
@@ -262,6 +287,8 @@ int main(int argc, char** argv)
 
 		drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
 			0.80f * fBkgFadeFactor, fCamX, fCamY);
+
+		drawStars(0.0f, &fCamY);
 
 		drawTextureBind(uiT4);
 
