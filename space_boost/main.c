@@ -6,6 +6,7 @@
 #include "fuelbar.h"
 #include "font.h"
 #include "boost.h"
+#include "smoke.h"
 
 static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
 {
@@ -87,7 +88,7 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 			//(pShip->mMovObj.mVelY*pShip->mMovObj.mVelY));
 		//printf("pfMagnitude : %f\n", fMagnitude);
 
-		pShip->mMovObj.mVelX += -sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
+		pShip->mMovObj.mVelX += sinf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
 		pShip->mMovObj.mVelY += cosf(DEG_TO_RAD(*fBoostRot)) * MAX_VEL;
 
 		//add some fuel to the repo
@@ -96,28 +97,6 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 		{
 			pShip->mFuelRemaining = FUEL_SINGLE_VALUE * MAX_FUEL_CELLS;
 		}
-	}
-}
-
-static void drawStars(float fXOffset, float* pCamY)
-{
-	int iCount = 0;
-	drawTextureUnbind();
-
-	for (int i = 0; i < STAR_NUM; i+=2)
-	{
-		//if the star is out of scope, move it to the next frame
-		if ((*pCamY+SCR_HEIGHT) < -cStarOffsets[i+1])
-		{
-			cStarOffsets[i+1] += (SCR_HEIGHT + 20);
-		}
-
-		float fSize = cBoostXOffsets[iCount++] * 0.01f;
-		drawColor3f(fSize, fSize, fSize);
-		drawPushMatrix();
-		drawTransformQuad(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1], fSize, fSize, NULL);
-		drawQuad();
-		drawPopMatrix();
 	}
 }
 
@@ -214,6 +193,12 @@ int main(int argc, char** argv)
 
 	double dNowTime, dLastTime;
 	float fDeltaTime;
+
+	float fThrustSmoke[SMOKE_PARTICLES];
+	for (int i = 0; i < SMOKE_PARTICLES; i++)
+	{
+		fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
+	}
 	
 	//game countdown and t+
 	float gameTimerCounter = 0.0f;
@@ -225,6 +210,7 @@ int main(int argc, char** argv)
 	GLuint uiT2 = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
 	GLuint uiT3 = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
 	GLuint uiT4 = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
+	GLuint uiT5 = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
 	
 	dLastTime = 0;
 
@@ -290,6 +276,24 @@ int main(int argc, char** argv)
 
 		drawStars(0.0f, &fCamY);
 
+		drawTextureBind(uiT5);
+		for (int i = 0; i < SMOKE_PARTICLES; i++)
+		{
+			float fSizeVal = (SMOKE_PARTICLES - i) * SMOKE_SHRINKING_VALUE;
+			if (Ship1.mMovObj.mVelY > 0.0f)
+			{
+				if (!bKeys[GLFW_KEY_A])
+				{
+					drawThrust(Ship1.mMovObj.mX - 2.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+				}
+
+				if (!bKeys[GLFW_KEY_D])
+				{
+					drawThrust(Ship1.mMovObj.mX + 20.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+				}
+			}
+		}
+
 		drawTextureBind(uiT4);
 
 		//get the boost sprites spinning
@@ -343,6 +347,7 @@ int main(int argc, char** argv)
 	drawTextureFree(uiT2);
 	drawTextureFree(uiT3);
 	drawTextureFree(uiT4);
+	drawTextureFree(uiT5);
 	drawFree();
 	return 0;
 }

@@ -209,6 +209,36 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 	}
 }
 
+void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed)
+{
+	drawPushMatrix();
+	drawTransformQuad(fX, fY + *fThrustY, fSize, SMOKE_SPRITE_SIZE, NULL);
+	drawQuad();
+	drawPopMatrix();
+}
+
+void drawStars(float fXOffset, float* pCamY)
+{
+	int iCount = 0;
+	drawTextureUnbind();
+
+	for (int i = 0; i < STAR_NUM; i+=2)
+	{
+		//if the star is out of scope, move it to the next frame
+		if ((*pCamY+SCR_HEIGHT) < -cStarOffsets[i+1])
+		{
+			cStarOffsets[i+1] += (SCR_HEIGHT + 20);
+		}
+
+		float fSize = cBoostXOffsets[iCount++] * 0.01f;
+		drawColor3f(fSize, fSize, fSize);
+		drawPushMatrix();
+		drawTransformQuad(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1], fSize, fSize, NULL);
+		drawQuad();
+		drawPopMatrix();
+	}
+}
+
 void drawFree()
 {
 	if (pWindow != NULL)

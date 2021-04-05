@@ -21,6 +21,8 @@ void drawLine(float fX, float fY, float fX2, float fY2, double fThick);
 void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
 void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr);
+void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed);
+void drawStars(float fXOffset, float* pCamY);
 //unload all main systems
 void drawFree();
 GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);
