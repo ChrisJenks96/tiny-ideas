@@ -16,7 +16,12 @@
 #define SCR_HEIGHT 480
 #define HALF_SCR_HEIGHT (SCR_HEIGHT / 2)
 
+#define STATE_MENU 0
+#define STATE_GAME 1
+
 //TEXTURE RELATED....
+
+#define MAX_TEXTURES 5
 
 #define SHIP_SIZE 32
 #define BOOST_SIZE 32

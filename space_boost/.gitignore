@@ -1,5 +1,6 @@
-/spaceboost5
+/spaceboost
 /*.o
 /*.bmp
 /*.bin
 /bin2h
+/sockets

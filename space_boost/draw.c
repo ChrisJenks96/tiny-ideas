@@ -54,7 +54,7 @@ bool drawInit()
 	return true;
 }
 
-void drawClear(float fR, float fG, float fB, float fCamX, float fCamY)
+void drawClear(float fR, float fG, float fB, float fCamY)
 {
 	glClearColor(fR, fG, fB, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -62,7 +62,7 @@ void drawClear(float fR, float fG, float fB, float fCamX, float fCamY)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, (double)SCR_WIDTH, 0.0, (double)SCR_HEIGHT, 0.0, 1.0);
-	glTranslatef(fCamX, fCamY, 0.0f);
+	glTranslatef(0.0f, fCamY, 0.0f);
 }
 
 void drawSwapBuffers()
@@ -99,12 +99,11 @@ void drawLine(float fX, float fY, float fX2, float fY2, double fThick)
 	glEnd();
 }
 
-void drawBox(float fX, float fY, float fX2, float fY2)
+void drawBox(float fX, float fY, float fX2, float fY2, float fThick)
 {
 	fY = (SCR_HEIGHT - fY) - fY2;
 
-	glColor3f(1.0, 1.0, 1.0);
-	glLineWidth(1.0);
+	glLineWidth(fThick);
 	
 	glBegin(GL_LINES);
 	glVertex2f(fX, fY);
@@ -178,8 +177,13 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	glEnd();
 }
 
-void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr)
+void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, bool bCentre)
 {
+	if (bCentre)
+	{
+		fX -= (fTextSepSize * strlen(cStr)) / 2.0f;
+	}
+
 	float fOriginalfX = fX;
 
 	//the size of each quad in GL

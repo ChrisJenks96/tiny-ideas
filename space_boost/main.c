@@ -29,7 +29,7 @@ static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, floa
 	}*/
 }
 
-static void cameraUpdate(float* pX, float* pY, sMainShipObject* pShip, float fDt)
+static void cameraUpdate(float* pY, sMainShipObject* pShip, float fDt)
 {
 	if (pShip->mMovObj.mY <= HALF_SCR_HEIGHT)
 	{
@@ -165,6 +165,38 @@ static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int*
 	}
 }
 
+//variables
+
+sMainShipObject Ship1;
+//fading from light into dark when the shuttle climbs
+float fBkgFadeFactor;
+//GL cam stuff...
+float fCamY;
+//for the glRotatef function
+float fBoostRotation;
+float fRotationArr[4];
+char cFontAltitudeText[128];
+char cFontHSText[128];
+char cGameTimerText[32];
+
+int iCurrentHighScore;
+int iCurrentAltitude;
+int iBoostStartID;
+int iBoostEndID;
+//frame timing
+double dNowTime, dLastTime;
+float fDeltaTime;
+
+float fThrustSmoke[SMOKE_PARTICLES];
+
+//game related timing (used as secondary high score)
+float gameTimerCounter;
+int gameTimerSeconds;
+int gameTimerMinutes;
+int gameTimerHours;
+
+GLuint uiT[MAX_TEXTURES];
+
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -173,44 +205,53 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	int iFuelCellsRemaining = MAX_FUEL_CELLS;
+	//start the game out in the menu state
+	int state = STATE_MENU;
 
-	sMainShipObject Ship1 = mainShipObjectCreate();
-	//fading from light into dark when the shuttle climbs
-	float fBkgFadeFactor = 1.0f;
-	//GL cam stuff...
-	float fCamX = 0.0f, fCamY = 0.0f;
-	//for the glRotatef function
-	float fBoostRotation = 0.0f;
-	float fRotationArr[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-	
-	char cFontAltitudeText[128], cFontHSText[128], cGameTimerText[32];
+	//load the font regardless
+	uiT[2] = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
 
-	//load the high score for the game in here...
-	int iCurrentHighScore = 0;
-	int iCurrentAltitude = 0;
-	int iBoostStartID = 0, iBoostEndID = 0;
-
-	double dNowTime, dLastTime;
-	float fDeltaTime;
-
-	float fThrustSmoke[SMOKE_PARTICLES];
-	for (int i = 0; i < SMOKE_PARTICLES; i++)
+	if (state == STATE_MENU)
 	{
-		fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
+
+	}
+
+	else if (state == STATE_GAME)
+	{
+		Ship1 = mainShipObjectCreate();
+		fBkgFadeFactor = 1.0f;
+		fCamY = 0.0f;
+		fBoostRotation = 0.0f;
+		fRotationArr[0] = 0.0f;
+		fRotationArr[1] = 0.0f;
+		fRotationArr[2] = 0.0f;
+		fRotationArr[3] = 1.0f;
+		
+		//load the high score for the game in here...
+		iCurrentHighScore = 0;
+		iCurrentAltitude = 0;
+		iBoostStartID = 0;
+		iBoostEndID = 0;
+
+		for (int i = 0; i < SMOKE_PARTICLES; i++)
+		{
+			fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
+		}
+		
+		//game countdown and t+
+		gameTimerCounter = 0.0f;
+		gameTimerSeconds = -5;
+		gameTimerMinutes = 0;
+		gameTimerHours = 0;
+		sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
+
+		//load statically held textures
+		uiT[0] = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
+		uiT[1] = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+		uiT[3] = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
+		uiT[4] = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
 	}
 	
-	//game countdown and t+
-	float gameTimerCounter = 0.0f;
-	int gameTimerSeconds = -5, gameTimerMinutes = 0, gameTimerHours = 0;
-	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
-
-	//load statically held textures
-	GLuint uiT1 = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
-	GLuint uiT2 = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
-	GLuint uiT3 = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
-	GLuint uiT4 = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
-	GLuint uiT5 = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
 	
 	dLastTime = 0;
 
@@ -224,130 +265,154 @@ int main(int argc, char** argv)
 		//quit if the escape button is pressed or the window close event is triggered
 		bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
 
-		//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
-		if (gameTimerSeconds >= 0)
+		if (state == STATE_MENU)
 		{
-			mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+			
 		}
-		
-		//get the boost sprite to render in the current viewport
-		boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
 
-		//collision checks against the existing boost sprites
-		for (int i = iBoostStartID; i < iBoostEndID; i++)
+		else if (state == STATE_GAME)
 		{
-			if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
+			//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
+			if (gameTimerSeconds >= 0)
 			{
-				//if we hit a boost sprite, then propell the ship in the direction of facing
-				boostShipTrajectoryUpdate(&Ship1, &fBoostRotation);
+				mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
 			}
-		}
+			
+			//get the boost sprite to render in the current viewport
+			boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
 
-		backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
+			//collision checks against the existing boost sprites
+			for (int i = iBoostStartID; i < iBoostEndID; i++)
+			{
+				if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
+				{
+					//if we hit a boost sprite, then propell the ship in the direction of facing
+					boostShipTrajectoryUpdate(&Ship1, &fBoostRotation);
+				}
+			}
 
-		//update the camera relative to the ships x/y
-		cameraUpdate(&fCamX, &fCamY, &Ship1, fDeltaTime);
+			backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
 
-		iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
+			//update the camera relative to the ships x/y
+			cameraUpdate(&fCamY, &Ship1, fDeltaTime);
 
-		iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
-		if (iCurrentAltitude > iCurrentHighScore)
-		{
-			iCurrentHighScore = iCurrentAltitude;
-		}
+			iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
+			if (iCurrentAltitude > iCurrentHighScore)
+			{
+				iCurrentHighScore = iCurrentAltitude;
+			}
 
-		memset(&cFontAltitudeText[0], 0, 128);
-		memset(&cFontHSText[0], 0, 128);
-		sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
-		sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
+			memset(&cFontAltitudeText[0], 0, 128);
+			memset(&cFontHSText[0], 0, 128);
+			sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
+			sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
 
-		gameTimerCounter += 1.0f * fDeltaTime;
-		if (gameTimerCounter > 1.0f)
-		{
-			gameTimerCounter = 0.0f;
-			gameTimerUpdate(&cGameTimerText[0], 
-				&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
+			gameTimerCounter += 1.0f * fDeltaTime;
+			if (gameTimerCounter > 1.0f)
+			{
+				gameTimerCounter = 0.0f;
+				gameTimerUpdate(&cGameTimerText[0], 
+					&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
+			}
 		}
 		
 		//rendering
 
 		drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
-			0.80f * fBkgFadeFactor, fCamX, fCamY);
+			0.80f * fBkgFadeFactor, fCamY);
 
-		drawStars(0.0f, &fCamY);
-
-		drawTextureBind(uiT5);
-		for (int i = 0; i < SMOKE_PARTICLES; i++)
+		if (state == STATE_MENU)
 		{
-			float fSizeVal = (SMOKE_PARTICLES - i) * SMOKE_SHRINKING_VALUE;
-			if (Ship1.mMovObj.mVelY > 0.0f)
-			{
-				if (!bKeys[GLFW_KEY_A])
-				{
-					drawThrust(Ship1.mMovObj.mX - 2.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
-				}
+			drawTextureBind(uiT[2]);
+			drawColor3f(1.0f, 1.0f, 1.0f);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", true);
+			drawColor3f(0.3f, 0.3f, 0.3f);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", true);
+			drawColor3f(1.0f, 1.0f, 1.0f);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, "127.0.0.1", true);
+			drawTextureUnbind();
+			drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
 
-				if (!bKeys[GLFW_KEY_D])
+		}
+
+		else if (state == STATE_GAME)
+		{
+			drawStars(0.0f, &fCamY);
+
+			drawTextureBind(uiT[4]);
+			for (int i = 0; i < SMOKE_PARTICLES; i++)
+			{
+				float fSizeVal = (SMOKE_PARTICLES - i) * SMOKE_SHRINKING_VALUE;
+				if (Ship1.mMovObj.mVelY > 0.0f)
 				{
-					drawThrust(Ship1.mMovObj.mX + 20.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+					if (!bKeys[GLFW_KEY_A])
+					{
+						drawThrust(Ship1.mMovObj.mX - 2.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+					}
+
+					if (!bKeys[GLFW_KEY_D])
+					{
+						drawThrust(Ship1.mMovObj.mX + 20.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+					}
 				}
 			}
-		}
 
-		drawTextureBind(uiT4);
+			drawTextureBind(uiT[3]);
 
-		//get the boost sprites spinning
-		fBoostRotation += 20.0f * fDeltaTime;
-		if (fBoostRotation >= 360)
-			fBoostRotation = 0;
+			//get the boost sprites spinning
+			fBoostRotation += 20.0f * fDeltaTime;
+			if (fBoostRotation >= 360)
+				fBoostRotation = 0;
 
-		fRotationArr[0] = fBoostRotation;
+			fRotationArr[0] = fBoostRotation;
 
-		for (int i = iBoostStartID; i < iBoostEndID; i++)
-		{
+			for (int i = iBoostStartID; i < iBoostEndID; i++)
+			{
+				drawPushMatrix();
+				drawTransformQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE,
+					fRotationArr);
+				drawQuad();
+				drawPopMatrix();
+			}
+
+			//reset the rotation back to the original value for rendering the rest of the objects
+			fRotationArr[0] = 0.0f;
+
+			drawTextureBind(uiT[0]);
 			drawPushMatrix();
-			drawTransformQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE,
-				fRotationArr);
+			drawTransformQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE,
+					fRotationArr);
 			drawQuad();
 			drawPopMatrix();
+
+			drawTextureBind(uiT[1]);
+			int iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
+			for (int i = 0; i < iFuelCellsRemaining; i++)
+			{
+				drawPushMatrix();
+				drawTransformQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y,
+					fRotationArr);
+				drawQuad();
+				drawPopMatrix();
+			}
+
+			drawTextureBind(uiT[2]);
+			drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText, false);
+			drawText(10, 50 + fCamY, 16, 9, cFontHSText, false);
+			drawText(10, 70 + fCamY, 16, 9, cGameTimerText, false);
 		}
 
-		//reset the rotation back to the original value for rendering the rest of the objects
-		fRotationArr[0] = 0.0f;
-
-		drawTextureBind(uiT1);
-		drawPushMatrix();
-		drawTransformQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE,
-				fRotationArr);
-		drawQuad();
-		drawPopMatrix();
-
-		drawTextureBind(uiT2);
-		for (int i = 0; i < iFuelCellsRemaining; i++)
-		{
-			drawPushMatrix();
-			drawTransformQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y,
-				fRotationArr);
-			drawQuad();
-			drawPopMatrix();
-		}
-
-		drawTextureBind(uiT3);
-		drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText);
-		drawText(10, 50 + fCamY, 16, 9, cFontHSText);
-		drawText(10, 70 + fCamY, 16, 9, cGameTimerText);
-		
 		drawSwapBuffers();
 
 		//printf("dt: %f\n", fDeltaTime);
 		dLastTime = dNowTime;
 	}
 
-	drawTextureFree(uiT1);
-	drawTextureFree(uiT2);
-	drawTextureFree(uiT3);
-	drawTextureFree(uiT4);
-	drawTextureFree(uiT5);
+	drawTextureFree(uiT[0]);
+	drawTextureFree(uiT[1]);
+	drawTextureFree(uiT[2]);
+	drawTextureFree(uiT[3]);
+	drawTextureFree(uiT[4]);
 	drawFree();
 	return 0;
 }
