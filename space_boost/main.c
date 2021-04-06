@@ -41,7 +41,6 @@ int gameTimerMinutes;
 int gameTimerHours;
 
 int iMenuOptions = 0;
-int iServerClientOption = 0;
 
 GLuint uiT[MAX_TEXTURES];
 
@@ -287,6 +286,11 @@ int main(int argc, char** argv)
 			{
 				//unload any menu items here...
 
+				if (iMenuOptions == 1)
+				{
+					clientInit();
+				}
+
 				//init the game assets
 				gameInit();
 				state = STATE_GAME;
@@ -300,7 +304,6 @@ int main(int argc, char** argv)
 				{
 					iMenuOptions = 0;
 				}
-				
 			}
 
 			//press down (singleplayer -> multiplayer)
@@ -310,26 +313,6 @@ int main(int argc, char** argv)
 				if (iMenuOptions > 1)
 				{
 					iMenuOptions = 1;
-				}
-			}
-
-			//press left (change client -> server)
-			else if (cLastKey == 7 && iMenuOptions == 1)
-			{
-				iServerClientOption -= 1;
-				if (iServerClientOption < 0)
-				{
-					iServerClientOption = 0;
-				}
-			}
-
-			//press right (change server -> client)
-			else if (cLastKey == 6 && iMenuOptions == 1)
-			{
-				iServerClientOption += 1;
-				if (iServerClientOption > 1)
-				{
-					iServerClientOption = 1;
 				}
 			}
 
@@ -364,6 +347,11 @@ int main(int argc, char** argv)
 
 		else if (state == STATE_GAME)
 		{
+			if (iMenuOptions == 1)
+			{
+				clientRead();
+			}
+
 			//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
 			if (gameTimerSeconds >= 0)
 			{
@@ -443,29 +431,9 @@ int main(int argc, char** argv)
 
 			if (iMenuOptions == 1)
 			{
-				if (iServerClientOption == 0)
-				{
-					drawColor3f(1.0f, 1.0f, 1.0f);
-				}
+				drawColor3f(1.0f, 1.0f, 1.0f);
+				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", true);
 
-				else
-				{
-					drawColor3f(0.3f, 0.3f, 0.3f);
-				}
-
-				drawText(HALF_SCR_WIDTH - 75.0f, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER", true);
-
-				if (iServerClientOption == 1)
-				{
-					drawColor3f(1.0f, 1.0f, 1.0f);
-				}
-
-				else
-				{
-					drawColor3f(0.3f, 0.3f, 0.3f);
-				}
-
-				drawText(HALF_SCR_WIDTH + 91.0f, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT", true);
 				drawColor3f(1.0f, 1.0f, 1.0f);
 				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
 				drawTextureUnbind();

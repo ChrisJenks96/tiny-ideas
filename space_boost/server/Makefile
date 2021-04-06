@@ -18,13 +18,13 @@ INCLUDES =
 
 LFLAGS =
 
-LIBS = -lglfw -lGL -lm
+LIBS =
 
-SRCS = main.c draw.c object.c global.c network.c
+SRCS = sb_server.c
 
 OBJS = $(SRCS:.c=.o)
 
-MAIN = spaceboost
+MAIN = spaceboostserver
 
 .PHONY: depend clean
 
