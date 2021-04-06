@@ -8,6 +8,40 @@
 #include "boost.h"
 #include "smoke.h"
 
+//variables
+
+sMainShipObject Ship1;
+//fading from light into dark when the shuttle climbs
+float fBkgFadeFactor;
+//GL cam stuff...
+float fCamY;
+//for the glRotatef function
+float fBoostRotation;
+float fRotationArr[4];
+char cFontAltitudeText[128];
+char cFontHSText[128];
+char cGameTimerText[32];
+char cIPAddrText[IP_MAX_TEXT];
+int iIPTextLength;
+
+int iCurrentHighScore;
+int iCurrentAltitude;
+int iBoostStartID;
+int iBoostEndID;
+//frame timing
+double dNowTime, dLastTime;
+float fDeltaTime;
+
+float fThrustSmoke[SMOKE_PARTICLES];
+
+//game related timing (used as secondary high score)
+float gameTimerCounter;
+int gameTimerSeconds;
+int gameTimerMinutes;
+int gameTimerHours;
+
+GLuint uiT[MAX_TEXTURES];
+
 static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
 {
 	//if the camera has centralised on the ship, then start fading into the stars
@@ -165,38 +199,6 @@ static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int*
 	}
 }
 
-//variables
-
-sMainShipObject Ship1;
-//fading from light into dark when the shuttle climbs
-float fBkgFadeFactor;
-//GL cam stuff...
-float fCamY;
-//for the glRotatef function
-float fBoostRotation;
-float fRotationArr[4];
-char cFontAltitudeText[128];
-char cFontHSText[128];
-char cGameTimerText[32];
-
-int iCurrentHighScore;
-int iCurrentAltitude;
-int iBoostStartID;
-int iBoostEndID;
-//frame timing
-double dNowTime, dLastTime;
-float fDeltaTime;
-
-float fThrustSmoke[SMOKE_PARTICLES];
-
-//game related timing (used as secondary high score)
-float gameTimerCounter;
-int gameTimerSeconds;
-int gameTimerMinutes;
-int gameTimerHours;
-
-GLuint uiT[MAX_TEXTURES];
-
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -213,7 +215,7 @@ int main(int argc, char** argv)
 
 	if (state == STATE_MENU)
 	{
-
+		iIPTextLength = 0;
 	}
 
 	else if (state == STATE_GAME)
@@ -267,7 +269,29 @@ int main(int argc, char** argv)
 
 		if (state == STATE_MENU)
 		{
-			
+			if (!bLastKeyPressed && cLastKey != -1)
+			{
+				if (cLastKey == 3)
+				{
+					iIPTextLength -= 1;
+					cIPAddrText[iIPTextLength] = 0;
+					if (iIPTextLength < 0)
+					{
+						iIPTextLength = 0;
+					}
+				}
+
+				else
+				{
+					cIPAddrText[iIPTextLength++] = cLastKey;
+					if (iIPTextLength > IP_MAX_TEXT)
+					{
+						iIPTextLength = IP_MAX_TEXT;
+					}
+				}
+
+				bLastKeyPressed = true;
+			}
 		}
 
 		else if (state == STATE_GAME)
@@ -329,10 +353,9 @@ int main(int argc, char** argv)
 			drawColor3f(0.3f, 0.3f, 0.3f);
 			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", true);
 			drawColor3f(1.0f, 1.0f, 1.0f);
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, "127.0.0.1", true);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
 			drawTextureUnbind();
 			drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
-
 		}
 
 		else if (state == STATE_GAME)

@@ -5,6 +5,8 @@
 extern GLFWwindow* pWindow;
 extern bool bQuit;
 extern bool bKeys[256];
+extern char cLastKey;
+extern bool bLastKeyPressed;
 
 //init all main systems and gl
 bool drawInit();

@@ -3,11 +3,25 @@
 GLFWwindow* pWindow = 0;
 bool bQuit = true;
 bool bKeys[256];
+char cLastKey = -1;
+bool bLastKeyPressed = false;
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	//false if GLFW_RELEASE
 	bKeys[key] = (action == GLFW_PRESS || action == GLFW_REPEAT) ? true : false;
+
+	if (action == GLFW_PRESS)
+	{
+		cLastKey = (char)key;
+		//make it upper case for the font
+		if (cLastKey >= 97)
+		{
+			cLastKey -= 32;
+		}
+
+		bLastKeyPressed = false;
+	}	
 }
 
 static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
