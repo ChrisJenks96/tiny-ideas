@@ -20,7 +20,7 @@ LFLAGS =
 
 LIBS = -lglfw -lGL -lm
 
-SRCS = main.c draw.c object.c
+SRCS = main.c draw.c object.c global.c
 
 OBJS = $(SRCS:.c=.o)
 

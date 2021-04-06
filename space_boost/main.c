@@ -40,6 +40,9 @@ int gameTimerSeconds;
 int gameTimerMinutes;
 int gameTimerHours;
 
+int iMenuOptions = 0;
+int iServerClientOption = 0;
+
 GLuint uiT[MAX_TEXTURES];
 
 static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, float fDt)
@@ -199,6 +202,47 @@ static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int*
 	}
 }
 
+static void menuInit()
+{
+	iIPTextLength = 0;
+}
+
+static void gameInit()
+{
+	Ship1 = mainShipObjectCreate();
+	fBkgFadeFactor = 1.0f;
+	fCamY = 0.0f;
+	fBoostRotation = 0.0f;
+	fRotationArr[0] = 0.0f;
+	fRotationArr[1] = 0.0f;
+	fRotationArr[2] = 0.0f;
+	fRotationArr[3] = 1.0f;
+	
+	//load the high score for the game in here...
+	iCurrentHighScore = 0;
+	iCurrentAltitude = 0;
+	iBoostStartID = 0;
+	iBoostEndID = 0;
+
+	for (int i = 0; i < SMOKE_PARTICLES; i++)
+	{
+		fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
+	}
+	
+	//game countdown and t+
+	gameTimerCounter = 0.0f;
+	gameTimerSeconds = -5;
+	gameTimerMinutes = 0;
+	gameTimerHours = 0;
+	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
+
+	//load statically held textures
+	uiT[0] = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
+	uiT[1] = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+	uiT[3] = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
+	uiT[4] = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
+}
+
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -210,48 +254,17 @@ int main(int argc, char** argv)
 	//start the game out in the menu state
 	int state = STATE_MENU;
 
-	//load the font regardless
+	//load the font regardless of initial state
 	uiT[2] = drawTextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
 
 	if (state == STATE_MENU)
 	{
-		iIPTextLength = 0;
+		menuInit();
 	}
 
 	else if (state == STATE_GAME)
 	{
-		Ship1 = mainShipObjectCreate();
-		fBkgFadeFactor = 1.0f;
-		fCamY = 0.0f;
-		fBoostRotation = 0.0f;
-		fRotationArr[0] = 0.0f;
-		fRotationArr[1] = 0.0f;
-		fRotationArr[2] = 0.0f;
-		fRotationArr[3] = 1.0f;
-		
-		//load the high score for the game in here...
-		iCurrentHighScore = 0;
-		iCurrentAltitude = 0;
-		iBoostStartID = 0;
-		iBoostEndID = 0;
-
-		for (int i = 0; i < SMOKE_PARTICLES; i++)
-		{
-			fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
-		}
-		
-		//game countdown and t+
-		gameTimerCounter = 0.0f;
-		gameTimerSeconds = -5;
-		gameTimerMinutes = 0;
-		gameTimerHours = 0;
-		sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
-
-		//load statically held textures
-		uiT[0] = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
-		uiT[1] = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
-		uiT[3] = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
-		uiT[4] = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
+		gameInit();
 	}
 	
 	
@@ -269,8 +282,63 @@ int main(int argc, char** argv)
 
 		if (state == STATE_MENU)
 		{
-			if (!bLastKeyPressed && cLastKey != -1)
+			//press enter and proceed to the game
+			if (cLastKey == 1)
 			{
+				//unload any menu items here...
+
+				//init the game assets
+				gameInit();
+				state = STATE_GAME;
+			}
+
+			//press up (multiplayer -> singleplayer)
+			else if (cLastKey == 9)
+			{
+				iMenuOptions -= 1;
+				if (iMenuOptions < 0)
+				{
+					iMenuOptions = 0;
+				}
+				
+			}
+
+			//press down (singleplayer -> multiplayer)
+			else if (cLastKey == 8)
+			{
+				iMenuOptions += 1;
+				if (iMenuOptions > 1)
+				{
+					iMenuOptions = 1;
+				}
+			}
+
+			//press left (change client -> server)
+			else if (cLastKey == 7 && iMenuOptions == 1)
+			{
+				iServerClientOption -= 1;
+				if (iServerClientOption < 0)
+				{
+					iServerClientOption = 0;
+				}
+			}
+
+			//press right (change server -> client)
+			else if (cLastKey == 6 && iMenuOptions == 1)
+			{
+				iServerClientOption += 1;
+				if (iServerClientOption > 1)
+				{
+					iServerClientOption = 1;
+				}
+			}
+
+			//only show the ip box if you have selected multiplayer
+			if (iMenuOptions == 1 && !bLastKeyPressed && 
+				cLastKey != -1 && cLastKey != 8 && cLastKey != 9 && 
+				cLastKey != 7 && cLastKey != 6 && cLastKey != 1)
+			{
+				//backspace
 				if (cLastKey == 3)
 				{
 					iIPTextLength -= 1;
@@ -348,14 +416,61 @@ int main(int argc, char** argv)
 		if (state == STATE_MENU)
 		{
 			drawTextureBind(uiT[2]);
-			drawColor3f(1.0f, 1.0f, 1.0f);
+			if (iMenuOptions == 0)
+			{
+				drawColor3f(1.0f, 1.0f, 1.0f);
+			}
+
+			else
+			{
+				drawColor3f(0.3f, 0.3f, 0.3f);
+			}
+			
 			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", true);
-			drawColor3f(0.3f, 0.3f, 0.3f);
+			
+			if (iMenuOptions == 1)
+			{
+				drawColor3f(1.0f, 1.0f, 1.0f);
+			}
+
+			else
+			{
+				drawColor3f(0.3f, 0.3f, 0.3f);
+			}
+
 			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", true);
 			drawColor3f(1.0f, 1.0f, 1.0f);
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
-			drawTextureUnbind();
-			drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
+
+			if (iMenuOptions == 1)
+			{
+				if (iServerClientOption == 0)
+				{
+					drawColor3f(1.0f, 1.0f, 1.0f);
+				}
+
+				else
+				{
+					drawColor3f(0.3f, 0.3f, 0.3f);
+				}
+
+				drawText(HALF_SCR_WIDTH - 75.0f, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER", true);
+
+				if (iServerClientOption == 1)
+				{
+					drawColor3f(1.0f, 1.0f, 1.0f);
+				}
+
+				else
+				{
+					drawColor3f(0.3f, 0.3f, 0.3f);
+				}
+
+				drawText(HALF_SCR_WIDTH + 91.0f, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT", true);
+				drawColor3f(1.0f, 1.0f, 1.0f);
+				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
+				drawTextureUnbind();
+				drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
+			}
 		}
 
 		else if (state == STATE_GAME)
@@ -365,7 +480,6 @@ int main(int argc, char** argv)
 			drawTextureBind(uiT[4]);
 			for (int i = 0; i < SMOKE_PARTICLES; i++)
 			{
-				float fSizeVal = (SMOKE_PARTICLES - i) * SMOKE_SHRINKING_VALUE;
 				if (Ship1.mMovObj.mVelY > 0.0f)
 				{
 					if (!bKeys[GLFW_KEY_A])
