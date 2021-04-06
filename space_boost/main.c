@@ -288,7 +288,8 @@ int main(int argc, char** argv)
 
 				if (iMenuOptions == 1)
 				{
-					clientInit();
+					//add null terminator to the ip
+					clientInit(cIPAddrText);
 				}
 
 				//init the game assets

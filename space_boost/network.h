@@ -16,5 +16,5 @@ struct sockaddr_in sAddressClient;
 char* pHelloClient = "Hello from Client!";
 char cBufferClient[1024];
 
-bool clientInit(char* pIP);
+bool clientInit(const char *restrict pIP);
 bool clientRead();

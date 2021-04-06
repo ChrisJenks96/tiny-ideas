@@ -1,6 +1,6 @@
 #include "network.h"
 
-bool clientInit(char* pIP)
+bool clientInit(const char *restrict pIP)
 {
 	if ((iSock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
