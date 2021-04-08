@@ -41,6 +41,8 @@ int gameTimerSeconds;
 int gameTimerMinutes;
 int gameTimerHours;
 
+bool gameFirstTimeUse = true;
+
 int iMenuOptions = 0;
 
 GLuint uiT[MAX_TEXTURES];
@@ -137,6 +139,43 @@ static void boostShipTrajectoryUpdate(sMainShipObject* pShip, float* fBoostRot)
 	}
 }
 
+static bool gameSaveOrLoad(bool save)
+{
+	//if the file does not exist
+	bool saveExists = access("GAME_SAVE.bin", F_OK) != 0 ? false : true;
+	FILE* pFile;
+
+	//save the game
+	if (save)
+	{
+		pFile = fopen("GAME_SAVE.bin", "wb");
+		fwrite(&iCurrentHighScore, sizeof(int), 1, pFile);
+		fclose(pFile);
+		return true;
+	}
+
+	//load the game
+	else
+	{
+		if (saveExists)
+		{
+			pFile = fopen("GAME_SAVE.bin", "rb");
+			fread(&iCurrentHighScore, sizeof(int), 1, pFile);
+			fclose(pFile);
+			return true;
+		}
+
+		else
+		{
+			//return false but having set the high score to 0
+			iCurrentHighScore = 0;
+			return false;
+		}
+	}
+
+	return false;
+}
+
 static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int* pHours)
 {
 	memset(&pGameTimer[0], 0, 32);
@@ -209,7 +248,30 @@ static void menuInit()
 
 static void gameInit()
 {
-	Ship1 = mainShipObjectCreate();
+	if (gameFirstTimeUse)
+	{
+		Ship1 = mainShipObjectCreate();
+
+		//load the game
+		gameSaveOrLoad(false);
+
+		//load statically held textures
+		uiT[0] = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
+		uiT[1] = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+		uiT[3] = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
+		uiT[4] = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
+
+		gameFirstTimeUse = false;
+	}
+
+	else
+	{
+		//save the highscore that the player has
+		gameSaveOrLoad(true);
+	}
+
+	mainShipObjectReset(&Ship1);
+	//iCUrrentAltitude will resync itself based on the ship
 	fBkgFadeFactor = 1.0f;
 	fCamY = 0.0f;
 	fBoostRotation = 0.0f;
@@ -218,9 +280,6 @@ static void gameInit()
 	fRotationArr[2] = 0.0f;
 	fRotationArr[3] = 1.0f;
 	
-	//load the high score for the game in here...
-	iCurrentHighScore = 0;
-	iCurrentAltitude = 0;
 	iBoostStartID = 0;
 	iBoostEndID = 0;
 
@@ -234,13 +293,7 @@ static void gameInit()
 	gameTimerSeconds = -5;
 	gameTimerMinutes = 0;
 	gameTimerHours = 0;
-	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);
-
-	//load statically held textures
-	uiT[0] = drawTextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
-	uiT[1] = drawTextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
-	uiT[3] = drawTextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
-	uiT[4] = drawTextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
+	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);	
 }
 
 int main(int argc, char** argv)

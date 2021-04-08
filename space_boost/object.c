@@ -17,6 +17,15 @@ sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed
 	return obj;
 }
 
+void moveableObjectReset(sMoveableObject* pMO, float fX, float fY)
+{
+	pMO->mX = fX;
+	pMO->mY = fY;
+	pMO->mVelX = 0.0f;
+	pMO->mVelY = 0.0f;
+	pMO->mRot = 0.0f;
+}
+
 bool moveableObjectCollisionUpdate(sMoveableObject* pMO, float fOtherPosX, float fOtherPosY, int iOtherSize)
 {
 	if (pMO->mY < (fOtherPosY + iOtherSize) && pMO->mY > (fOtherPosY - pMO->mSize) && 
@@ -36,6 +45,14 @@ sMainShipObject mainShipObjectCreate()
 	obj.mFuelRemaining = FUEL_START_VALUE;
 	obj.mHitObject = false;
 	return obj;
+}
+
+void mainShipObjectReset(sMainShipObject* pMSO)
+{
+	moveableObjectReset(&pMSO->mMovObj, HALF_SCR_WIDTH - SHIP_SIZE, 
+		SCR_HEIGHT - SHIP_SIZE);
+	pMSO->mFuelRemaining = FUEL_START_VALUE;
+	pMSO->mHitObject = false;
 }
 
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)

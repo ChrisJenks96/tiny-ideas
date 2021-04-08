@@ -14,6 +14,7 @@ typedef struct sMoveableObject
 } sMoveableObject;
 
 sMoveableObject moveableObjectCreate(int iSize, float fX, float fY, float fSpeed, float fMaxVal);
+void moveableObjectReset(sMoveableObject* pMO, float fX, float fY);
 bool moveableObjectCollisionUpdate(sMoveableObject* pMO, float fOtherPosX, float fOtherPosY, int iOtherSize);
 
 typedef struct sMainShipObject
@@ -27,4 +28,5 @@ typedef struct sMainShipObject
 extern float hitExpiryTimer;
 
 sMainShipObject mainShipObjectCreate();
+void mainShipObjectReset(sMainShipObject* pMSO);
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt);
