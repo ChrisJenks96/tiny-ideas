@@ -1,5 +1,10 @@
 #include "network.h"
 
+int iSock, iValReadClient;
+struct sockaddr_in sAddressClient;
+char* pHelloClient = "Hello from Client!";
+char cBufferClient[1024];
+
 bool clientInit(const char *restrict pIP)
 {
 	if ((iSock = socket(AF_INET, SOCK_STREAM, 0)) < 0)

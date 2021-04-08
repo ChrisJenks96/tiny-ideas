@@ -1,5 +1,6 @@
 #include "draw.h"
 #include "object.h"
+#include "network.h"
 
 //images in header format
 #include "ship.h"
@@ -56,13 +57,13 @@ static void backgroundUpdate(float* pBkgFadeFactor, sMainShipObject* pShip, floa
 	}
 
 	//if we're dropping back down to the surface, bring the colour back
-	/*else
+	else if (pShip->mMovObj.mY > HALF_SCR_HEIGHT)
 	{
 		if (*pBkgFadeFactor < 1.0f)
 		{
-			*pBkgFadeFactor += BKG_FADE_SPEED * fDt;
+			*pBkgFadeFactor += (BKG_FADE_SPEED * (-pShip->mMovObj.mVelY / MAX_VEL)) * fDt;
 		}
-	}*/
+	}
 }
 
 static void cameraUpdate(float* pY, sMainShipObject* pShip, float fDt)
@@ -288,7 +289,6 @@ int main(int argc, char** argv)
 
 				if (iMenuOptions == 1)
 				{
-					//add null terminator to the ip
 					clientInit(cIPAddrText);
 				}
 
@@ -445,11 +445,10 @@ int main(int argc, char** argv)
 		else if (state == STATE_GAME)
 		{
 			drawStars(0.0f, &fCamY);
-
-			drawTextureBind(uiT[4]);
-			for (int i = 0; i < SMOKE_PARTICLES; i++)
+			if (Ship1.mThrottle)
 			{
-				if (Ship1.mMovObj.mVelY > 0.0f)
+				drawTextureBind(uiT[4]);
+				for (int i = 0; i < SMOKE_PARTICLES; i++)
 				{
 					if (!bKeys[GLFW_KEY_A])
 					{
@@ -462,7 +461,7 @@ int main(int argc, char** argv)
 					}
 				}
 			}
-
+			
 			drawTextureBind(uiT[3]);
 
 			//get the boost sprites spinning

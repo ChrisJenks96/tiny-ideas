@@ -21,6 +21,7 @@ typedef struct sMainShipObject
 	sMoveableObject mMovObj;
 	float mFuelRemaining;
 	bool mHitObject;
+	bool mThrottle;
 } sMainShipObject;
 
 extern float hitExpiryTimer;

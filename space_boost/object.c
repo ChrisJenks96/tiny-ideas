@@ -40,8 +40,10 @@ sMainShipObject mainShipObjectCreate()
 
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)
 {
+	pMSO->mThrottle = false;
 	if (pKeys[GLFW_KEY_W] && !(pMSO->mFuelRemaining < 0.1f))
 	{
+		pMSO->mThrottle = true;
 		pMSO->mMovObj.mVelY += pMSO->mMovObj.mVelSpeed * fDt;
 		pMSO->mFuelRemaining -= FUEL_CONSUMPTION_RATE * fDt;
 	}
