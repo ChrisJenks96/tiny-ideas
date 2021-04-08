@@ -277,11 +277,11 @@ int main(int argc, char** argv)
 
 		//updates
 
-		//quit if the escape button is pressed or the window close event is triggered
-		bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
-
 		if (state == STATE_MENU)
 		{
+			//quit if the escape button is pressed or the window close event is triggered
+			bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
+
 			//press enter and proceed to the game
 			if (cLastKey == 1)
 			{
@@ -348,12 +348,18 @@ int main(int argc, char** argv)
 
 		else if (state == STATE_GAME)
 		{
+			if (bKeys[GLFW_KEY_ESCAPE])
+			{
+				state = STATE_MENU;
+				//force quit to disabled so we don't double quit (menu will quit the game...)
+				bKeys[GLFW_KEY_ESCAPE] = false;
+			}
+
 			if (iMenuOptions == 1)
 			{
 				clientRead();
 			}
 
-			//fBkgFadeFactor -= (!((int)Ship1.mY % SKY_TRANSITION_Y)) ? BKG_FADE_SPEED : 0.0f;
 			if (gameTimerSeconds >= 0)
 			{
 				mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
@@ -399,11 +405,10 @@ int main(int argc, char** argv)
 		
 		//rendering
 
-		drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
-			0.80f * fBkgFadeFactor, fCamY);
-
 		if (state == STATE_MENU)
 		{
+			drawClear(0.0f, 0.0f, 0.0f, fCamY);
+
 			drawTextureBind(uiT[2]);
 			if (iMenuOptions == 0)
 			{
@@ -444,6 +449,9 @@ int main(int argc, char** argv)
 
 		else if (state == STATE_GAME)
 		{
+			drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
+			0.80f * fBkgFadeFactor, fCamY);
+
 			drawStars(0.0f, &fCamY);
 			if (Ship1.mThrottle)
 			{

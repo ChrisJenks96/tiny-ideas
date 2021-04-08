@@ -32,6 +32,7 @@ static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 static void errorCallback(int error, const char* description)
 {
 	//error printing functionality here...
+	printf("%s\n", description);
 }
 
 bool drawInit()
