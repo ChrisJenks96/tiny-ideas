@@ -20,11 +20,11 @@ LFLAGS = -lenet
 
 LIBS =
 
-SRCS = sb_server.c
+SRCS = sb_client.c
 
 OBJS = $(SRCS:.c=.o)
 
-MAIN = spaceboostserver
+MAIN = spaceboostclient
 
 .PHONY: depend clean
 

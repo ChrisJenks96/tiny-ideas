@@ -9,6 +9,7 @@
 #Ubuntu prereqs:
 	#mesa-common-dev
 	#libglfw3-dev
+	#libenet-dev
 
 CC = gcc
 
@@ -18,7 +19,7 @@ INCLUDES =
 
 LFLAGS =
 
-LIBS = -lglfw -lGL -lm
+LIBS = -lglfw -lGL -lm -lenet
 
 SRCS = main.c draw.c object.c global.c network.c
 

@@ -339,15 +339,39 @@ int main(int argc, char** argv)
 			if (cLastKey == 1)
 			{
 				//unload any menu items here...
+				bool bProceed = true;
 
 				if (iMenuOptions == 1)
 				{
-					clientInit(cIPAddrText);
+					//create a client
+					if (pClient == NULL)
+					{
+						bProceed = clientInit();
+					}
+
+					if (bProceed)
+					{
+						//if the client cannot connect and we've picked to do multiplayer,
+						//reset out state back to menu
+						bProceed = clientConnect(cIPAddrText, 1234, 5000);
+						bClientConnectedToHost = bProceed;
+						//remove and reset ip again after post connection (bad or good)
+						//because bmp font is all upper case and it converts it to lowercase, we must remove 
+						//the ip text (slower to revert it back)
+						memset(&cIPAddrText[0], 0, strlen(cIPAddrText));
+						iIPTextLength = 0;
+						cLastKey = -1;
+					}
+					
 				}
 
-				//init the game assets
-				gameInit();
-				state = STATE_GAME;
+				if (bProceed)
+				{
+					//init the game assets
+					gameInit();
+					state = STATE_GAME;
+				}
+				
 			}
 
 			//press up (multiplayer -> singleplayer)
@@ -408,9 +432,15 @@ int main(int argc, char** argv)
 				bKeys[GLFW_KEY_ESCAPE] = false;
 			}
 
-			if (iMenuOptions == 1)
+			if (bClientConnectedToHost)
 			{
-				clientRead();
+				fClientTimer += 1.0f * fDeltaTime;
+				if (fClientTimer > CLIENT_NETWORK_UPDATE)
+				{
+					clientUpdate();
+					fClientTimer = 0.0f;
+				}
+				
 			}
 
 			if (gameTimerSeconds >= 0)
@@ -491,8 +521,29 @@ int main(int argc, char** argv)
 			if (iMenuOptions == 1)
 			{
 				drawColor3f(1.0f, 1.0f, 1.0f);
-				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", true);
 
+				switch (iClientState)
+				{
+					case CLIENT_STATE_NULL:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", true);
+					break; 
+					case CLIENT_STATE_INIT_FAILED:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", true);
+					break; 
+					case CLIENT_STATE_INIT_SUCCESS:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: INIT SUCCESSFUL", true);
+					break; 
+					case CLIENT_STATE_CONNECTING:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTING...", true);
+					break; 
+					case CLIENT_STATE_CONNECTING_FAILED:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO CONNECT", true);
+					break; 
+					case CLIENT_STATE_CONNECTING_SUCCESS:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", true);
+					break; 
+				}
+				
 				drawColor3f(1.0f, 1.0f, 1.0f);
 				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
 				drawTextureUnbind();
@@ -580,5 +631,6 @@ int main(int argc, char** argv)
 	drawTextureFree(uiT[3]);
 	drawTextureFree(uiT[4]);
 	drawFree();
+	clientDestroy();
 	return 0;
 }
