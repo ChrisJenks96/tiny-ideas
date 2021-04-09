@@ -344,28 +344,43 @@ int main(int argc, char** argv)
 				if (iMenuOptions == 1)
 				{
 					//create a client
-					if (pClient == NULL)
+					if (!bClientInit)
 					{
 						bProceed = clientInit();
+						if (iClientState == CLIENT_STATE_INIT_SUCCESS)
+						{
+							bClientInit = true;
+						}
 					}
 
 					if (bProceed)
 					{
 						//if the client cannot connect and we've picked to do multiplayer,
 						//reset out state back to menu
-						bProceed = clientConnect(cIPAddrText, 1234, 5000);
-						bClientConnectedToHost = bProceed;
+						bProceed = clientConnect(cIPAddrText, 7654, 5000);
 						//remove and reset ip again after post connection (bad or good)
 						//because bmp font is all upper case and it converts it to lowercase, we must remove 
 						//the ip text (slower to revert it back)
-						memset(&cIPAddrText[0], 0, strlen(cIPAddrText));
-						iIPTextLength = 0;
+						if (iClientState != CLIENT_STATE_CONNECTING_SUCCESS)
+						{
+							memset(&cIPAddrText[0], 0, strlen(cIPAddrText));
+							iIPTextLength = 0;
+						}
+
+						//get a set id from the server
+						else if (iClientState == CLIENT_STATE_CONNECTING_SUCCESS)
+						{
+							clientGetNewID();
+						}
+
+						bClientConnectedToHost = (iClientState == CLIENT_STATE_NEW_ID);
+						
 						cLastKey = -1;
 					}
 					
 				}
 
-				if (bProceed)
+				if (bClientConnectedToHost)
 				{
 					//init the game assets
 					gameInit();
@@ -541,6 +556,9 @@ int main(int argc, char** argv)
 					break; 
 					case CLIENT_STATE_CONNECTING_SUCCESS:
 					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", true);
+					break; 
+					case CLIENT_STATE_NEW_ID:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", true);
 					break; 
 				}
 				

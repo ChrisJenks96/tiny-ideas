@@ -1,24 +1,21 @@
 #include "network.h"
 
-ENetHost* pClient = NULL;
-ENetAddress clientAddress;
-ENetEvent clientEvent;
-ENetPeer* clientPeer = NULL;
-ENetPacket* pClientPacket = NULL;
+int iSock;
+struct sockaddr_in sa;
+int iBytesSent, iBytesRec;
+socklen_t fromlen;
 int iClientState = CLIENT_STATE_NULL;
 bool bClientConnectedToHost = false;
 float fClientTimer = 0.0f;
+bool bClientInit = false;
+
+DATA_PACKET myData;
 
 bool clientInit()
 {
-	if (enet_initialize () != 0) 
-	{
-		return false;
-	}
-
-	pClient = enet_host_create(NULL, 32, 2, 0, 0);
-
-	if (pClient == NULL)
+	/* create an Internet, datagram, socket using UDP */
+	iSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (iSock == -1) 
 	{
 		iClientState = CLIENT_STATE_INIT_FAILED;
 	    return false;
@@ -28,7 +25,20 @@ bool clientInit()
 	return true;
 }
 
-bool clientConnect(char* pIP, short sPort, int iMSDelay)
+void clientGetNewID()
+{
+	DATA_PACKET tmpDataPacket;
+	while (myData.cId == -1)
+	{
+		iBytesRec = recvfrom(iSock, &tmpDataPacket, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);
+		//if we get data that is from the server giving us a new id, lets us it
+		myData.cId = tmpDataPacket.cId != -1 ? tmpDataPacket.cId : myData.cId;
+	}
+
+	iClientState = CLIENT_STATE_NEW_ID;
+}
+
+bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 {
 	int iLength = strlen(pIP);
 	if (iLength == 0)
@@ -40,57 +50,47 @@ bool clientConnect(char* pIP, short sPort, int iMSDelay)
 	else
 	{
 		//if it's a character based ip, make sure to lower the char
-		while (*pIP != '\0')
+		/*while (*pIP != '\0')
 		{
 			*pIP += (*pIP >= 65 && *pIP <= 90) ? 32 : 0;
 			pIP++;
-		}
+		}*/
 	}
 
-	enet_address_set_host(&clientAddress, pIP);
-	clientAddress.port = sPort;
+	//tell the server we need an id allocated from the server
+	myData.cId = -1;
+	fromlen = sizeof(sa);
 
-	//init connection, alloc the two channels 0 and 1
-	clientPeer = enet_host_connect(pClient, &clientAddress, 2, 0);
-	if (clientPeer == NULL)
+	/* Zero out socket address */
+	memset(&sa, 0, sizeof(sa));
+
+	/* The address is IPv4 */
+	sa.sin_family = AF_INET;
+
+	/* IPv4 addresses is a uint32_t, convert a string representation of the octets to the appropriate value */
+	sa.sin_addr.s_addr = inet_addr(pIP);
+
+	/* sockets are unsigned shorts, htons(x) ensures x is in network byte order, set the port to 7654 */
+	sa.sin_port = htons(sPort);
+
+	iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0,(struct sockaddr*)&sa, sizeof(sa));
+	if (iBytesSent < 0)
 	{
+		close(iSock);
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 		return false;
 	}
 
-	if (enet_host_service(pClient, &clientEvent, iMSDelay) > 0 && clientEvent.type == ENET_EVENT_TYPE_CONNECT)
-	{
-		iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
-		return true;
-	}
-
-	else
-	{
-		iClientState = CLIENT_STATE_CONNECTING_FAILED;
-		enet_peer_reset(clientPeer);
-		return false;
-	}
+	iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
+	return true;
 }
 
 bool clientUpdate()
 {
-	//host deals with freeing the packet on arrival
-	pClientPacket = enet_packet_create("packet", 7, ENET_PACKET_FLAG_RELIABLE);
-	//send the packet to peer we've connected too
-	enet_peer_send(clientPeer, 0, pClientPacket);
 	return true;
 }
 
 void clientDestroy()
 {
-	if (pClient != NULL)
-	{
-		//destroy the active packet used to send
-		enet_packet_destroy(pClientPacket);
-		//force disconnect a peer
-		enet_peer_reset(clientPeer);
-		enet_host_destroy(pClient);
-	}
-	
-	enet_deinitialize();
+	close(iSock);
 }

@@ -16,7 +16,7 @@ CFLAGS = -Wall -g -s
 
 INCLUDES =
 
-LFLAGS = -lenet
+LFLAGS =
 
 LIBS =
 

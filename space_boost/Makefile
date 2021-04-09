@@ -9,7 +9,6 @@
 #Ubuntu prereqs:
 	#mesa-common-dev
 	#libglfw3-dev
-	#libenet-dev
 
 CC = gcc
 
