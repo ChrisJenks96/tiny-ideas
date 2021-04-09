@@ -42,7 +42,6 @@ int gameTimerMinutes;
 int gameTimerHours;
 
 bool gameFirstTimeUse = true;
-
 int iMenuOptions = 0;
 
 GLuint uiT[MAX_TEXTURES];
@@ -333,7 +332,7 @@ int main(int argc, char** argv)
 		if (state == STATE_MENU)
 		{
 			//quit if the escape button is pressed or the window close event is triggered
-			bQuit = glfwWindowShouldClose(pWindow) | bKeys[GLFW_KEY_ESCAPE];
+			bQuit = glfwWindowShouldClose(pWindow) | cLastKey == 0;
 
 			//press enter and proceed to the game
 			if (cLastKey == 1)
@@ -370,23 +369,34 @@ int main(int argc, char** argv)
 						//get a set id from the server
 						else if (iClientState == CLIENT_STATE_CONNECTING_SUCCESS)
 						{
-							clientGetNewID();
+							//create alt thread that will receive the handshake packet from server without stalling main loop
+							int iRet;
+							pthread_mutex_init(&mutex1, NULL);
+							if (iRet = pthread_create(&thread1, NULL, clientGetNewID, NULL))
+							{
+								printf("Thread creation failed!\n");
+								bProceed = false;
+								//kill the connection and go back to the menu
+								bClientConnectedToHost = bProceed;
+								bClientInit = bProceed;
+								clientDestroy();
+							}
+							
+							bClientConnectedToHost = true;
 						}
-
-						bClientConnectedToHost = (iClientState == CLIENT_STATE_NEW_ID);
-						
-						cLastKey = -1;
 					}
-					
 				}
 
-				if (bClientConnectedToHost)
+				if (bProceed)
 				{
 					//init the game assets
 					gameInit();
 					state = STATE_GAME;
+					//finish the thread and update the client state
+					pthread_join(thread1, NULL);
 				}
-				
+
+				cLastKey = -1;
 			}
 
 			//press up (multiplayer -> singleplayer)
@@ -440,22 +450,44 @@ int main(int argc, char** argv)
 
 		else if (state == STATE_GAME)
 		{
-			if (bKeys[GLFW_KEY_ESCAPE])
+			if (cLastKey == 0)
 			{
 				state = STATE_MENU;
 				//force quit to disabled so we don't double quit (menu will quit the game...)
-				bKeys[GLFW_KEY_ESCAPE] = false;
+				cLastKey = -1;
 			}
 
 			if (bClientConnectedToHost)
-			{
-				fClientTimer += 1.0f * fDeltaTime;
-				if (fClientTimer > CLIENT_NETWORK_UPDATE)
+			{ 
+				if (iClientState == CLIENT_STATE_NEW_ID)
 				{
-					clientUpdate();
-					fClientTimer = 0.0f;
+					printf("%i %f %f\n", myData.cId, myData.fPos[0], myData.fPos[1]);
+					//update the ships data
+					Ship1.mMovObj.mX = myData.fPos[0];
+					Ship1.mMovObj.mY = myData.fPos[1];
+
+					//setup the thread to run the send/rec from server
+					int iRet;
+					if (iRet = pthread_create(&thread1, NULL, clientUpdate, &fDeltaTime))
+					{
+						printf("Thread creation failed!\n");
+						//kill the connection and go back to the menu
+						bClientConnectedToHost = false;
+						clientDestroy();
+					}
+
+					//update to the client being in the online game
+					iClientState = CLIENT_STATE_IN_GAME;
 				}
-				
+
+				else if (iClientState == CLIENT_STATE_SERVER_FULL)
+				{
+					//kill the connection and go back to the menu
+					bClientConnectedToHost = false;
+					clientDestroy();
+					//revert back to the menu if the max capacity is limited
+					state = STATE_MENU;
+				}
 			}
 
 			if (gameTimerSeconds >= 0)
@@ -560,6 +592,9 @@ int main(int argc, char** argv)
 					case CLIENT_STATE_NEW_ID:
 					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", true);
 					break; 
+					case CLIENT_STATE_SERVER_FULL:
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", true);
+					break; 
 				}
 				
 				drawColor3f(1.0f, 1.0f, 1.0f);
@@ -642,6 +677,9 @@ int main(int argc, char** argv)
 		//printf("dt: %f\n", fDeltaTime);
 		dLastTime = dNowTime;
 	}
+
+	//force join which will terminate thread
+	pthread_join(thread1, NULL);
 
 	drawTextureFree(uiT[0]);
 	drawTextureFree(uiT[1]);

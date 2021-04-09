@@ -9,6 +9,9 @@ bool bClientConnectedToHost = false;
 float fClientTimer = 0.0f;
 bool bClientInit = false;
 
+pthread_t thread1;
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
 DATA_PACKET myData;
 
 bool clientInit()
@@ -27,15 +30,21 @@ bool clientInit()
 
 void clientGetNewID()
 {
-	DATA_PACKET tmpDataPacket;
-	while (myData.cId == -1)
+	pthread_mutex_lock(&mutex1);
+	iBytesRec = recvfrom(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);	
+	//there has been no packet sent back, so this means we're at capacity on the server
+	if (myData.cId == -1)
 	{
-		iBytesRec = recvfrom(iSock, &tmpDataPacket, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);
-		//if we get data that is from the server giving us a new id, lets us it
-		myData.cId = tmpDataPacket.cId != -1 ? tmpDataPacket.cId : myData.cId;
+		iClientState = CLIENT_STATE_SERVER_FULL;
 	}
 
-	iClientState = CLIENT_STATE_NEW_ID;
+	else
+	{
+		//tells us that the handshake packet is received from host
+		iClientState = CLIENT_STATE_NEW_ID;
+	}
+	
+	pthread_mutex_unlock(&mutex1);
 }
 
 bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
@@ -85,9 +94,15 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	return true;
 }
 
-bool clientUpdate()
+void clientUpdate(float* fDeltaTime)
 {
-	return true;
+	fClientTimer += 1.0f * *fDeltaTime;
+	if (fClientTimer > CLIENT_NETWORK_UPDATE)
+	{
+		//do client update shit here...
+
+		fClientTimer = 0.0f;
+	}
 }
 
 void clientDestroy()

@@ -18,7 +18,7 @@ INCLUDES =
 
 LFLAGS =
 
-LIBS = -lglfw -lGL -lm -lenet
+LIBS = -lglfw -lGL -lm -lpthread
 
 SRCS = main.c draw.c object.c global.c network.c
 

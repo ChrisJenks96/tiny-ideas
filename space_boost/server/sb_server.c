@@ -8,6 +8,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define SCR_WIDTH 640
+#define SHIP_SIZE 32
+#define SCR_HEIGHT 480
+#define SHIP_OFFSET_X 20
+#define MAX_CLIENTS 4
+
+#define SHIP_POS_X_DIFF ((SCR_WIDTH - (SHIP_OFFSET_X * 2)) / MAX_CLIENTS) - (SHIP_SIZE / 2)
+
 typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
@@ -20,7 +28,6 @@ int main(void)
 	struct sockaddr_in sa; 
 	int iRecSize;
 	socklen_t fromlen;
-	int iBytesSent;
 
 	int8_t iCurrentNumOfClients = 0;
 
@@ -49,9 +56,22 @@ int main(void)
 			sleep(1);
 			//allocate the client a new id
 			if (data.cId == -1)
-			{	
-				data.cId = iCurrentNumOfClients++;
-				iBytesSent = sendto(iSock, &data, iDataSize, 0, (struct sockaddr*)&sa, sizeof(sa));
+			{
+				if (iCurrentNumOfClients < MAX_CLIENTS)
+				{
+					data.fPos[0] = (SHIP_POS_X_DIFF * (iCurrentNumOfClients+1));
+					data.fPos[1] = SCR_HEIGHT - SHIP_SIZE;
+					data.cId = iCurrentNumOfClients++;
+				}
+
+				else
+				{
+					printf("Max Clients reached!\n", data.cId, data.fPos[0], data.fPos[1]);
+					data.cId = -1;
+				}
+
+				printf("%i %f %f\n", data.cId, data.fPos[0], data.fPos[1]);
+				sendto(iSock, &data, iDataSize, 0, (struct sockaddr*)&sa, sizeof(sa));
 			}
 		}
 	}

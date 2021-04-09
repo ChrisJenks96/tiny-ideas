@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include <pthread.h>
+
 typedef struct DATA_PACKET
 {
 	int8_t cId; //-127-127 (server gives us an iden)
@@ -28,6 +30,9 @@ extern bool bClientConnectedToHost;
 extern bool bClientInit;
 extern float fClientTimer;
 
+extern pthread_t thread1;
+extern pthread_mutex_t mutex1;
+
 extern DATA_PACKET myData;
 
 #define CLIENT_STATE_NULL -1
@@ -37,11 +42,13 @@ extern DATA_PACKET myData;
 #define CLIENT_STATE_CONNECTING_FAILED 3
 #define CLIENT_STATE_CONNECTING_SUCCESS 4
 #define CLIENT_STATE_NEW_ID 5
+#define CLIENT_STATE_IN_GAME 6
+#define CLIENT_STATE_SERVER_FULL 7
 
 #define CLIENT_NETWORK_UPDATE 1.0f
 
 bool clientInit();
 bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay);
-bool clientUpdate();
+void clientUpdate(float* fDeltaTime);
 void clientDestroy();
 void clientGetNewID();
