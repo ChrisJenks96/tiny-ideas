@@ -37,7 +37,6 @@ bool clientInit()
 void* clientGetNewID()
 {
 	pthread_mutex_lock(&mutex1);
-
 	//if the host cannot be contacted in 5 seconds, then abort and presume the ip provided is crap...
 	struct timeval timeout;
 	timeout.tv_sec = 5;
@@ -150,7 +149,6 @@ void* clientUpdate()
 void clientIPFree()
 {
 	memset(&cIPAddrText, 0, IP_MAX_TEXT);
-	//cIPAddrText[0] = 0;
 	iIPTextLength = 0;
 }
 

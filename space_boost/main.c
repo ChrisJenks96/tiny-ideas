@@ -375,19 +375,20 @@ int main(int argc, char** argv)
 
 				if (bClientConnectedToHost)
 				{
-					//finish the thread and update the client state
-					pthread_join(thread1, NULL);
 					if (iClientState == CLIENT_STATE_NEW_ID)
 					{
-						//init the game assets
-						gameInit();
-						state = STATE_GAME;
+						//finish the thread and update the client state
+						pthread_join(thread1, NULL);
 					}
 
 					else
 					{
 						bClientConnectedToHost = false;
 					}
+
+					//init the game assets
+					gameInit();
+					state = STATE_GAME;
 				}
 			}
 
@@ -696,6 +697,8 @@ int main(int argc, char** argv)
 		//printf("dt: %f\n", fDeltaTime);
 		dLastTime = dNowTime;
 	}
+
+	pthread_mutex_destroy(&mutex1);
 
 	drawTextureFree(uiT[0]);
 	drawTextureFree(uiT[1]);
