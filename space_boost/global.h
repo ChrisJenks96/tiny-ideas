@@ -40,6 +40,10 @@
 #define FONT_CHAR_SIZE (FONT_SIZE / FONT_CHARS_PER_ROW) //128px wide with 8 chars per row
 #define FONT_MAX_CHARS_PER_ROW 30
 
+//NETWORK RELATED...
+
+#define SERVER_MAX_CLIENTS 4
+
 //GAME RELATED...
 
 #define IP_MAX_TEXT 20

@@ -9,9 +9,15 @@ bool bClientConnectedToHost = false;
 float fClientTimer = 0.0f;
 bool bClientInit = false;
 int iIPTextLength;
+int iServerID = -1;
 pthread_t thread1;
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
+float fClientPos[2];
+
+//we're just going to sent all the data from each client over the network
+DATA_PACKET_GLOBAL globalData;
+//the data we get from the client
 DATA_PACKET myData;
 
 bool clientInit()
@@ -38,25 +44,25 @@ void* clientGetNewID()
 	timeout.tv_usec = 0;
 	setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-	iBytesRec = recvfrom(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);	
+	iBytesRec = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);	
 	if (iBytesRec == -1)
 	{
-		printf("CLIENT_STATE_CONNECTING_FAILED\n");
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 	}
 
 	else
 	{
 		//there has been no packet sent back, so this means we're at capacity on the server
-		if (myData.cId == -2)
+		if (globalData.iMyID == -2)
 		{
-			printf("CLIENT_STATE_SERVER_FULL\n");
 			iClientState = CLIENT_STATE_SERVER_FULL;
 		}
 
 		else
 		{
-			printf("CLIENT_STATE_NEW_ID\n");
+			iServerID = globalData.iMyID;
+			//sending data back to the server
+			myData.cId = iServerID;
 			//tells us that the handshake packet is received from host
 			iClientState = CLIENT_STATE_NEW_ID;
 		}
@@ -109,25 +115,33 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
 	if (iBytesSent < 0)
 	{
-		printf("CLIENT_STATE_CONNECTING_FAILED\n");
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 		return false;
 	}
 
-	printf("CLIENT_STATE_CONNECTING_SUCCESS\n");
 	iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
 	return true;
 }
 
-void* clientUpdate(void* fDeltaTime)
+void* clientUpdate()
 {
-	float* fDt = (float*)fDeltaTime;
-	fClientTimer += 1.0f * *fDt;
-	if (fClientTimer > CLIENT_NETWORK_UPDATE)
+	while (iClientState == CLIENT_STATE_IN_GAME)
 	{
-		//do client update shit here...
-
-		fClientTimer = 0.0f;
+		pthread_mutex_lock(&mutex1);
+		
+		//send our data to the server for updating
+		myData.fPos[0] = fClientPos[0];
+		myData.fPos[1] = fClientPos[1];
+		int iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
+		
+		/*struct timeval timeout;
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));*/
+		//receive data back from the server
+		int iRecSize = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
+		
+		pthread_mutex_unlock(&mutex1);
 	}
 
 	return NULL;

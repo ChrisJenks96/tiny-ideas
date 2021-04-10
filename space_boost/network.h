@@ -19,6 +19,12 @@ typedef struct DATA_PACKET
 	float fPos[2]; //x&y
 } DATA_PACKET;
 
+typedef struct DATA_PACKET_GLOBAL
+{
+	int iMyID; //the id of this specific client so we don't have to index ourselves the data below
+	DATA_PACKET data[SERVER_MAX_CLIENTS];
+} DATA_PACKET_GLOBAL;
+
 //client vars
 extern int iSock;
 extern struct sockaddr_in sa;
@@ -33,7 +39,13 @@ extern int iIPTextLength;
 extern pthread_t thread1;
 extern pthread_mutex_t mutex1;
 
-extern DATA_PACKET myData;
+//we're just going to sent all the data from each client over the network
+extern DATA_PACKET_GLOBAL globalData;
+//the data we get from the client
+extern DATA_PACKET data;
+extern int iServerID;
+
+extern float fClientPos[2];
 
 static char cIPAddrText[IP_MAX_TEXT];
 
@@ -47,11 +59,9 @@ static char cIPAddrText[IP_MAX_TEXT];
 #define CLIENT_STATE_IN_GAME 6
 #define CLIENT_STATE_SERVER_FULL 7
 
-#define CLIENT_NETWORK_UPDATE 1.0f
-
 bool clientInit();
 bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay);
-void* clientUpdate(void* fDeltaTime);
+void* clientUpdate();
 void clientDestroy();
 void clientIPFree();
 void* clientGetNewID();

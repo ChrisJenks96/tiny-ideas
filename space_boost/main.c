@@ -443,6 +443,16 @@ int main(int argc, char** argv)
 			if (cLastKey == 0)
 			{
 				state = STATE_MENU;
+
+				//disconnect from the server, kill the receiving thread
+				if (bClientConnectedToHost)
+				{
+					//change the state to force the client to stop seeking packets from server
+					iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
+					pthread_join(thread1, NULL);
+					bClientConnectedToHost = false;
+				}
+				
 				//force quit to disabled so we don't double quit (menu will quit the game...)
 				cLastKey = -1;
 			}
@@ -451,14 +461,13 @@ int main(int argc, char** argv)
 			{ 
 				if (iClientState == CLIENT_STATE_NEW_ID)
 				{
-					printf("%i %f %f\n", myData.cId, myData.fPos[0], myData.fPos[1]);
 					//update the ships data
-					Ship1.mMovObj.mX = myData.fPos[0];
-					Ship1.mMovObj.mY = myData.fPos[1];
+					Ship1.mMovObj.mX = globalData.data[iServerID].fPos[0];
+					Ship1.mMovObj.mY = globalData.data[iServerID].fPos[1];
 
 					//setup the thread to run the send/rec from server
 					int iRet;
-					if ((iRet = pthread_create(&thread1, NULL, clientUpdate, &fDeltaTime)))
+					if ((iRet = pthread_create(&thread1, NULL, clientUpdate, NULL)))
 					{
 						printf("Thread creation failed!\n");
 						//kill the connection and go back to the menu
@@ -474,6 +483,13 @@ int main(int argc, char** argv)
 					bClientConnectedToHost = false;
 					//revert back to the menu if the max capacity is limited
 					state = STATE_MENU;
+				}
+
+				else if (iClientState == CLIENT_STATE_IN_GAME)
+				{
+					//update the client positions to send off to the server
+					fClientPos[0] = Ship1.mMovObj.mX;
+					fClientPos[1] = Ship1.mMovObj.mY;
 				}
 			}
 
@@ -559,7 +575,7 @@ int main(int argc, char** argv)
 				switch (iClientState)
 				{
 					case CLIENT_STATE_NULL:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 15, true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 14, true);
 					break; 
 					case CLIENT_STATE_INIT_FAILED:
 					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", 22, true);
@@ -642,6 +658,22 @@ int main(int argc, char** argv)
 			drawQuad();
 			drawPopMatrix();
 
+			//if its multiplayer, then draw the other clients excluding us
+			if (iClientState == CLIENT_STATE_IN_GAME)
+			{
+				for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
+				{
+					if (globalData.data[i].cId != iServerID && globalData.data[i].cId != -1)
+					{
+						drawPushMatrix();
+						drawTransformQuad(globalData.data[i].fPos[0], globalData.data[i].fPos[1], 
+							SHIP_SIZE, SHIP_SIZE, fRotationArr);
+						drawQuad();
+						drawPopMatrix();
+					}
+				}
+			}
+
 			drawTextureBind(uiT[1]);
 			int iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
 			for (int i = 0; i < iFuelCellsRemaining; i++)
@@ -664,9 +696,6 @@ int main(int argc, char** argv)
 		//printf("dt: %f\n", fDeltaTime);
 		dLastTime = dNowTime;
 	}
-
-	//force join which will terminate thread
-	pthread_join(thread1, NULL);
 
 	drawTextureFree(uiT[0]);
 	drawTextureFree(uiT[1]);
