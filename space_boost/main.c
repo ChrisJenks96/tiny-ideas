@@ -335,11 +335,16 @@ int main(int argc, char** argv)
 			//press enter and proceed to the game
 			if (cLastKey == 1)
 			{
-				//unload any menu items here...
-				bClientConnectedToHost = true;
-
-				if (iMenuOptions == 1)
+				if (iMenuOptions == 0)
 				{
+					//init the game assets
+					gameInit();
+					state = STATE_GAME;
+				}
+
+				else if (iMenuOptions == 1)
+				{
+					bClientConnectedToHost = true;
 					//create a client
 					if (!bClientInit)
 					{
@@ -371,24 +376,23 @@ int main(int argc, char** argv)
 							}
 						}
 					}
-				}
 
-				if (bClientConnectedToHost)
-				{
-					if (iClientState == CLIENT_STATE_NEW_ID)
+					if (bClientConnectedToHost)
 					{
-						//finish the thread and update the client state
-						pthread_join(thread1, NULL);
-					}
+						if (iClientState == CLIENT_STATE_NEW_ID)
+						{
+							//finish the thread and update the client state
+							pthread_join(thread1, NULL);
+							//init the game assets
+							gameInit();
+							state = STATE_GAME;
+						}
 
-					else
-					{
-						bClientConnectedToHost = false;
-					}
-
-					//init the game assets
-					gameInit();
-					state = STATE_GAME;
+						else
+						{
+							bClientConnectedToHost = false;
+						}
+					}					
 				}
 			}
 
@@ -435,8 +439,6 @@ int main(int argc, char** argv)
 					}
 				}
 			}
-
-			cLastKey = -1;
 		}
 
 		else if (state == STATE_GAME)
@@ -453,9 +455,6 @@ int main(int argc, char** argv)
 					pthread_join(thread1, NULL);
 					bClientConnectedToHost = false;
 				}
-				
-				//force quit to disabled so we don't double quit (menu will quit the game...)
-				cLastKey = -1;
 			}
 
 			if (bClientConnectedToHost)
@@ -536,12 +535,14 @@ int main(int argc, char** argv)
 					&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
 			}
 		}
+
+		cLastKey = -1;
 		
 		//rendering
 
 		if (state == STATE_MENU)
 		{
-			drawClear(0.0f, 0.0f, 0.0f, fCamY);
+			drawClear(0.0f, 0.0f, 0.0f, 0.0f);
 
 			drawTextureBind(uiT[2]);
 			if (iMenuOptions == 0)
