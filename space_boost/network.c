@@ -31,19 +31,37 @@ bool clientInit()
 void* clientGetNewID()
 {
 	pthread_mutex_lock(&mutex1);
+
+	//if the host cannot be contacted in 5 seconds, then abort and presume the ip provided is crap...
+	struct timeval timeout;
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;
+	setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
 	iBytesRec = recvfrom(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);	
-	//there has been no packet sent back, so this means we're at capacity on the server
-	if (myData.cId == -2)
+	if (iBytesRec == -1)
 	{
-		iClientState = CLIENT_STATE_SERVER_FULL;
+		printf("CLIENT_STATE_CONNECTING_FAILED\n");
+		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 	}
 
 	else
 	{
-		//tells us that the handshake packet is received from host
-		iClientState = CLIENT_STATE_NEW_ID;
+		//there has been no packet sent back, so this means we're at capacity on the server
+		if (myData.cId == -2)
+		{
+			printf("CLIENT_STATE_SERVER_FULL\n");
+			iClientState = CLIENT_STATE_SERVER_FULL;
+		}
+
+		else
+		{
+			printf("CLIENT_STATE_NEW_ID\n");
+			//tells us that the handshake packet is received from host
+			iClientState = CLIENT_STATE_NEW_ID;
+		}
 	}
-	
+
 	pthread_mutex_unlock(&mutex1);
 	return NULL;
 }
@@ -82,10 +100,8 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	sa.sin_family = AF_INET;
 
 	/* IPv4 addresses is a uint32_t, convert a string representation of the octets to the appropriate value */
+	pIP[iIPTextLength] = 0;
 	sa.sin_addr.s_addr = inet_addr(pIP);
-	
-	//requires SO_BROADCAST option before attempting to send a datagram to a base/broadcast address (prevents permission denied iBytesSent err)
-	setsockopt(iSock, SOL_SOCKET, SO_BROADCAST, (struct sockaddr*)&sa, sizeof(sa));
 
 	/* sockets are unsigned shorts, htons(x) ensures x is in network byte order, set the port to 7654 */
 	sa.sin_port = htons(sPort);
@@ -93,10 +109,12 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
 	if (iBytesSent < 0)
 	{
+		printf("CLIENT_STATE_CONNECTING_FAILED\n");
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 		return false;
 	}
 
+	printf("CLIENT_STATE_CONNECTING_SUCCESS\n");
 	iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
 	return true;
 }
@@ -117,8 +135,8 @@ void* clientUpdate(void* fDeltaTime)
 
 void clientIPFree()
 {
-	memset(&cIPAddrText[0], 0, IP_MAX_TEXT);
-	cIPAddrText[0] = 0;
+	memset(&cIPAddrText, 0, IP_MAX_TEXT);
+	//cIPAddrText[0] = 0;
 	iIPTextLength = 0;
 }
 

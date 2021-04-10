@@ -368,10 +368,7 @@ int main(int argc, char** argv)
 								printf("Thread creation failed!\n");
 								//kill the connection and go back to the menu
 								bClientConnectedToHost = false;
-								bClientInit = false;
 							}
-							
-							bClientConnectedToHost = true;
 						}
 					}
 				}
@@ -380,9 +377,17 @@ int main(int argc, char** argv)
 				{
 					//finish the thread and update the client state
 					pthread_join(thread1, NULL);
-					//init the game assets
-					gameInit();
-					state = STATE_GAME;
+					if (iClientState == CLIENT_STATE_NEW_ID)
+					{
+						//init the game assets
+						gameInit();
+						state = STATE_GAME;
+					}
+
+					else
+					{
+						bClientConnectedToHost = false;
+					}
 				}
 			}
 
