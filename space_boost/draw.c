@@ -4,7 +4,6 @@ GLFWwindow* pWindow = 0;
 bool bQuit = true;
 bool bKeys[256];
 char cLastKey = -1;
-bool bLastKeyPressed = false;
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -19,8 +18,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		{
 			cLastKey -= 32;
 		}
-
-		bLastKeyPressed = false;
 	}	
 }
 
@@ -192,11 +189,11 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	glEnd();
 }
 
-void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, bool bCentre)
+void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre)
 {
 	if (bCentre)
 	{
-		fX -= (fTextSepSize * strlen(cStr)) / 2.0f;
+		fX -= (fTextSepSize * iLen) / 2.0f;
 	}
 
 	float fOriginalfX = fX;
@@ -207,9 +204,10 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 	//width and height are the same, will always be multiple of 8
 	float max = (1.0f / FONT_SIZE) * FONT_CHAR_SIZE;
 
-	while (*cStr != '\0')
+	int iCount = 0;
+	while (iCount < iLen)
 	{
-		uint16_t ucStrCharVal = (*cStr) - 32; //ascii val to bitmap index
+		uint16_t ucStrCharVal = cStr[iCount] - 32; //ascii val to bitmap index
 		float fUVX = (ucStrCharVal % FONT_CHARS_PER_ROW) * max;
 		float fUVY = (ucStrCharVal / FONT_CHARS_PER_ROW) * max;
 
@@ -224,7 +222,7 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 			fY += fQuadSize;
 		}
 
-		cStr++;
+		iCount++;
 	}
 }
 

@@ -42,7 +42,7 @@
 
 //GAME RELATED...
 
-#define IP_MAX_TEXT 16
+#define IP_MAX_TEXT 20
 
 #define BKG_FADE_SPEED 0.1f
 #define FUEL_CELL_SPRITE_SEPERATION 5

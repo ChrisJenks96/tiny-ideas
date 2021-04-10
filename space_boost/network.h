@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include "global.h"
 #include <pthread.h>
 
 typedef struct DATA_PACKET
@@ -29,11 +29,13 @@ extern int iClientState;
 extern bool bClientConnectedToHost;
 extern bool bClientInit;
 extern float fClientTimer;
-
+extern int iIPTextLength;
 extern pthread_t thread1;
 extern pthread_mutex_t mutex1;
 
 extern DATA_PACKET myData;
+
+static char cIPAddrText[IP_MAX_TEXT];
 
 #define CLIENT_STATE_NULL -1
 #define CLIENT_STATE_INIT_FAILED 0
@@ -49,6 +51,7 @@ extern DATA_PACKET myData;
 
 bool clientInit();
 bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay);
-void clientUpdate(float* fDeltaTime);
+void* clientUpdate(void* fDeltaTime);
 void clientDestroy();
-void clientGetNewID();
+void clientIPFree();
+void* clientGetNewID();

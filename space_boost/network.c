@@ -8,7 +8,7 @@ int iClientState = CLIENT_STATE_NULL;
 bool bClientConnectedToHost = false;
 float fClientTimer = 0.0f;
 bool bClientInit = false;
-
+int iIPTextLength;
 pthread_t thread1;
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
@@ -28,12 +28,12 @@ bool clientInit()
 	return true;
 }
 
-void clientGetNewID()
+void* clientGetNewID()
 {
 	pthread_mutex_lock(&mutex1);
 	iBytesRec = recvfrom(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);	
 	//there has been no packet sent back, so this means we're at capacity on the server
-	if (myData.cId == -1)
+	if (myData.cId == -2)
 	{
 		iClientState = CLIENT_STATE_SERVER_FULL;
 	}
@@ -45,12 +45,12 @@ void clientGetNewID()
 	}
 	
 	pthread_mutex_unlock(&mutex1);
+	return NULL;
 }
 
 bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 {
-	int iLength = strlen(pIP);
-	if (iLength == 0)
+	if (iIPTextLength == 0)
 	{
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 		return false;
@@ -59,11 +59,16 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	else
 	{
 		//if it's a character based ip, make sure to lower the char
-		/*while (*pIP != '\0')
+		int iCount = 0;
+		while (iCount < iIPTextLength)
 		{
-			*pIP += (*pIP >= 65 && *pIP <= 90) ? 32 : 0;
-			pIP++;
-		}*/
+			if (pIP[iCount] >= 65 && pIP[iCount] <= 90)
+			{
+				pIP[iCount] += 32;
+			}
+
+			iCount++;
+		}
 	}
 
 	//tell the server we need an id allocated from the server
@@ -78,14 +83,16 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 
 	/* IPv4 addresses is a uint32_t, convert a string representation of the octets to the appropriate value */
 	sa.sin_addr.s_addr = inet_addr(pIP);
+	
+	//requires SO_BROADCAST option before attempting to send a datagram to a base/broadcast address (prevents permission denied iBytesSent err)
+	setsockopt(iSock, SOL_SOCKET, SO_BROADCAST, (struct sockaddr*)&sa, sizeof(sa));
 
 	/* sockets are unsigned shorts, htons(x) ensures x is in network byte order, set the port to 7654 */
 	sa.sin_port = htons(sPort);
 
-	iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0,(struct sockaddr*)&sa, sizeof(sa));
+	iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
 	if (iBytesSent < 0)
 	{
-		close(iSock);
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
 		return false;
 	}
@@ -94,18 +101,29 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	return true;
 }
 
-void clientUpdate(float* fDeltaTime)
+void* clientUpdate(void* fDeltaTime)
 {
-	fClientTimer += 1.0f * *fDeltaTime;
+	float* fDt = (float*)fDeltaTime;
+	fClientTimer += 1.0f * *fDt;
 	if (fClientTimer > CLIENT_NETWORK_UPDATE)
 	{
 		//do client update shit here...
 
 		fClientTimer = 0.0f;
 	}
+
+	return NULL;
+}
+
+void clientIPFree()
+{
+	memset(&cIPAddrText[0], 0, IP_MAX_TEXT);
+	cIPAddrText[0] = 0;
+	iIPTextLength = 0;
 }
 
 void clientDestroy()
 {
+	bClientInit = false;
 	close(iSock);
 }

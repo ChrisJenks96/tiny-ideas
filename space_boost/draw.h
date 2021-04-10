@@ -6,7 +6,6 @@ extern GLFWwindow* pWindow;
 extern bool bQuit;
 extern bool bKeys[256];
 extern char cLastKey;
-extern bool bLastKeyPressed;
 
 //init all main systems and gl
 bool drawInit();
@@ -22,7 +21,7 @@ void drawBox(float fX, float fY, float fX2, float fY2, float fThick);
 void drawLine(float fX, float fY, float fX2, float fY2, double fThick);
 void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
-void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, bool bCentre);
+void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre);
 void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed);
 void drawStars(float fXOffset, float* pCamY);
 //unload all main systems

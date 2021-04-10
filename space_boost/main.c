@@ -22,8 +22,6 @@ float fRotationArr[4];
 char cFontAltitudeText[128];
 char cFontHSText[128];
 char cGameTimerText[32];
-char cIPAddrText[IP_MAX_TEXT];
-int iIPTextLength;
 
 int iCurrentHighScore;
 int iCurrentAltitude;
@@ -332,54 +330,45 @@ int main(int argc, char** argv)
 		if (state == STATE_MENU)
 		{
 			//quit if the escape button is pressed or the window close event is triggered
-			bQuit = glfwWindowShouldClose(pWindow) | cLastKey == 0;
+			bQuit = glfwWindowShouldClose(pWindow) | (cLastKey == 0);
 
 			//press enter and proceed to the game
 			if (cLastKey == 1)
 			{
 				//unload any menu items here...
-				bool bProceed = true;
+				bClientConnectedToHost = true;
 
 				if (iMenuOptions == 1)
 				{
 					//create a client
 					if (!bClientInit)
 					{
-						bProceed = clientInit();
+						bClientConnectedToHost = clientInit();
 						if (iClientState == CLIENT_STATE_INIT_SUCCESS)
 						{
 							bClientInit = true;
 						}
 					}
 
-					if (bProceed)
+					if (bClientConnectedToHost)
 					{
 						//if the client cannot connect and we've picked to do multiplayer,
 						//reset out state back to menu
-						bProceed = clientConnect(cIPAddrText, 7654, 5000);
-						//remove and reset ip again after post connection (bad or good)
-						//because bmp font is all upper case and it converts it to lowercase, we must remove 
-						//the ip text (slower to revert it back)
-						if (iClientState != CLIENT_STATE_CONNECTING_SUCCESS)
-						{
-							memset(&cIPAddrText[0], 0, strlen(cIPAddrText));
-							iIPTextLength = 0;
-						}
+						bClientConnectedToHost = clientConnect(cIPAddrText, 7654, 5000);
+						clientIPFree();
 
 						//get a set id from the server
-						else if (iClientState == CLIENT_STATE_CONNECTING_SUCCESS)
+						if (iClientState == CLIENT_STATE_CONNECTING_SUCCESS)
 						{
 							//create alt thread that will receive the handshake packet from server without stalling main loop
 							int iRet;
 							pthread_mutex_init(&mutex1, NULL);
-							if (iRet = pthread_create(&thread1, NULL, clientGetNewID, NULL))
+							if ((iRet = pthread_create(&thread1, NULL, clientGetNewID, NULL)))
 							{
 								printf("Thread creation failed!\n");
-								bProceed = false;
 								//kill the connection and go back to the menu
-								bClientConnectedToHost = bProceed;
-								bClientInit = bProceed;
-								clientDestroy();
+								bClientConnectedToHost = false;
+								bClientInit = false;
 							}
 							
 							bClientConnectedToHost = true;
@@ -387,16 +376,14 @@ int main(int argc, char** argv)
 					}
 				}
 
-				if (bProceed)
+				if (bClientConnectedToHost)
 				{
+					//finish the thread and update the client state
+					pthread_join(thread1, NULL);
 					//init the game assets
 					gameInit();
 					state = STATE_GAME;
-					//finish the thread and update the client state
-					pthread_join(thread1, NULL);
 				}
-
-				cLastKey = -1;
 			}
 
 			//press up (multiplayer -> singleplayer)
@@ -420,9 +407,7 @@ int main(int argc, char** argv)
 			}
 
 			//only show the ip box if you have selected multiplayer
-			if (iMenuOptions == 1 && !bLastKeyPressed && 
-				cLastKey != -1 && cLastKey != 8 && cLastKey != 9 && 
-				cLastKey != 7 && cLastKey != 6 && cLastKey != 1)
+			else if (iMenuOptions == 1 && ((cLastKey >= 32 && cLastKey <= 122) || cLastKey == 3))
 			{
 				//backspace
 				if (cLastKey == 3)
@@ -443,9 +428,9 @@ int main(int argc, char** argv)
 						iIPTextLength = IP_MAX_TEXT;
 					}
 				}
-
-				bLastKeyPressed = true;
 			}
+
+			cLastKey = -1;
 		}
 
 		else if (state == STATE_GAME)
@@ -468,12 +453,10 @@ int main(int argc, char** argv)
 
 					//setup the thread to run the send/rec from server
 					int iRet;
-					if (iRet = pthread_create(&thread1, NULL, clientUpdate, &fDeltaTime))
+					if ((iRet = pthread_create(&thread1, NULL, clientUpdate, &fDeltaTime)))
 					{
 						printf("Thread creation failed!\n");
 						//kill the connection and go back to the menu
-						bClientConnectedToHost = false;
-						clientDestroy();
 					}
 
 					//update to the client being in the online game
@@ -484,7 +467,6 @@ int main(int argc, char** argv)
 				{
 					//kill the connection and go back to the menu
 					bClientConnectedToHost = false;
-					clientDestroy();
 					//revert back to the menu if the max capacity is limited
 					state = STATE_MENU;
 				}
@@ -550,7 +532,7 @@ int main(int argc, char** argv)
 				drawColor3f(0.3f, 0.3f, 0.3f);
 			}
 			
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", true);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", 18, true);
 			
 			if (iMenuOptions == 1)
 			{
@@ -562,7 +544,7 @@ int main(int argc, char** argv)
 				drawColor3f(0.3f, 0.3f, 0.3f);
 			}
 
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", true);
+			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", 16, true);
 			drawColor3f(1.0f, 1.0f, 1.0f);
 
 			if (iMenuOptions == 1)
@@ -572,33 +554,33 @@ int main(int argc, char** argv)
 				switch (iClientState)
 				{
 					case CLIENT_STATE_NULL:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 15, true);
 					break; 
 					case CLIENT_STATE_INIT_FAILED:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", 22, true);
 					break; 
 					case CLIENT_STATE_INIT_SUCCESS:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: INIT SUCCESSFUL", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: INIT SUCCESSFUL", 23, true);
 					break; 
 					case CLIENT_STATE_CONNECTING:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTING...", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTING...", 21, true);
 					break; 
 					case CLIENT_STATE_CONNECTING_FAILED:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO CONNECT", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION FAILED", 25, true);
 					break; 
 					case CLIENT_STATE_CONNECTING_SUCCESS:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", 29, true);
 					break; 
 					case CLIENT_STATE_NEW_ID:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", 14, true);
 					break; 
 					case CLIENT_STATE_SERVER_FULL:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", true);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", 14, true);
 					break; 
 				}
 				
 				drawColor3f(1.0f, 1.0f, 1.0f);
-				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, true);
+				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, iIPTextLength, true);
 				drawTextureUnbind();
 				drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
 			}
@@ -667,9 +649,9 @@ int main(int argc, char** argv)
 			}
 
 			drawTextureBind(uiT[2]);
-			drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText, false);
-			drawText(10, 50 + fCamY, 16, 9, cFontHSText, false);
-			drawText(10, 70 + fCamY, 16, 9, cGameTimerText, false);
+			drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText, strlen(cFontAltitudeText), false);
+			drawText(10, 50 + fCamY, 16, 9, cFontHSText, strlen(cFontHSText), false);
+			drawText(10, 70 + fCamY, 16, 9, cGameTimerText, strlen(cGameTimerText), false);
 		}
 
 		drawSwapBuffers();

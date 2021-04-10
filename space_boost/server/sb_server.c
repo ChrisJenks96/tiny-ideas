@@ -67,7 +67,7 @@ int main(void)
 				else
 				{
 					printf("Max Clients reached!\n", data.cId, data.fPos[0], data.fPos[1]);
-					data.cId = -1;
+					data.cId = -2;
 				}
 
 				printf("%i %f %f\n", data.cId, data.fPos[0], data.fPos[1]);
