@@ -69,6 +69,10 @@
 
 #define BOOST_REACTIVATION_WAIT_TIME 5.0f
 
+#define ALTITUDE_TEXT_SIZE 32
+#define HIGH_SCORE_TEXT_SIZE 32
+#define GAME_TIMER_TEXT_SIZE 32
+
 //used to get a 0-255 to 0-SCR_WIDTH on boost x values
 #define BOOST_EXTEND_X SCR_WIDTH / 255.0f
 

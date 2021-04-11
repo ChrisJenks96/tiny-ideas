@@ -15,6 +15,7 @@ void drawSwapBuffers();
 void drawPushMatrix();
 void drawPopMatrix();
 void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal);
+void drawTransformPoint(float fX, float fY);
 void drawQuad();
 void drawColor3f(float fR, float fG, float fB);
 void drawBox(float fX, float fY, float fX2, float fY2, float fThick);
@@ -24,6 +25,7 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre);
 void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed);
 void drawStars(float fXOffset, float* pCamY);
+void drawPoint();
 //unload all main systems
 void drawFree();
 GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);

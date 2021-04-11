@@ -53,6 +53,7 @@ void mainShipObjectReset(sMainShipObject* pMSO)
 		SCR_HEIGHT - SHIP_SIZE);
 	pMSO->mFuelRemaining = FUEL_START_VALUE;
 	pMSO->mHitObject = false;
+	pMSO->mThrottle = false;
 }
 
 void mainShipObjectUpdate(sMainShipObject* pMSO, bool* pKeys, float fDt)

@@ -19,9 +19,9 @@ float fCamY;
 //for the glRotatef function
 float fBoostRotation;
 float fRotationArr[4];
-char cFontAltitudeText[128];
-char cFontHSText[128];
-char cGameTimerText[32];
+char cFontAltitudeText[ALTITUDE_TEXT_SIZE];
+char cFontHSText[HIGH_SCORE_TEXT_SIZE];
+char cGameTimerText[GAME_TIMER_TEXT_SIZE];
 
 int iCurrentHighScore;
 int iCurrentAltitude;
@@ -30,6 +30,8 @@ int iBoostEndID;
 //frame timing
 double dNowTime, dLastTime;
 float fDeltaTime;
+float fFPSCounter = 0;
+int iFrames = 0;
 
 float fThrustSmoke[SMOKE_PARTICLES];
 
@@ -175,7 +177,6 @@ static bool gameSaveOrLoad(bool save)
 
 static void gameTimerUpdate(char* pGameTimer, int* pSeconds, int* pMinutes, int* pHours)
 {
-	memset(&pGameTimer[0], 0, 32);
 	*pSeconds += 1;
 
 	if (*pSeconds >= 60)
@@ -293,6 +294,20 @@ static void gameInit()
 	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -gameTimerSeconds);	
 }
 
+void showFPS()
+{
+	//calc fps
+	iFrames++;
+	fFPSCounter += fDeltaTime;
+
+	if (fFPSCounter >= 1.0f)
+	{
+		printf("FPS: %i\n", iFrames);
+		iFrames = 0;
+		fFPSCounter = 0.0f;
+	}
+}
+
 int main(int argc, char** argv)
 {
 	bool bErr = drawInit();
@@ -323,7 +338,11 @@ int main(int argc, char** argv)
 	while (!bQuit)
 	{
 		dNowTime = glfwGetTime();
-		fDeltaTime = dNowTime - dLastTime;
+		fDeltaTime = (dNowTime - dLastTime);
+		//printf("dt: %f\n", (fDeltaTime * 1000.0f));
+		dLastTime = dNowTime;
+
+		showFPS();
 
 		//updates
 
@@ -363,7 +382,7 @@ int main(int argc, char** argv)
 						clientIPFree();
 
 						//get a set id from the server
-						if (iClientState == CLIENT_STATE_CONNECTING_SUCCESS)
+						if (iClientState == CLIENT_STATE_CONNECTING)
 						{
 							//create alt thread that will receive the handshake packet from server without stalling main loop
 							int iRet;
@@ -522,8 +541,6 @@ int main(int argc, char** argv)
 				iCurrentHighScore = iCurrentAltitude;
 			}
 
-			memset(&cFontAltitudeText[0], 0, 128);
-			memset(&cFontHSText[0], 0, 128);
 			sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
 			sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
 
@@ -618,7 +635,7 @@ int main(int argc, char** argv)
 			if (Ship1.mThrottle)
 			{
 				drawTextureBind(uiT[4]);
-				for (int i = 0; i < SMOKE_PARTICLES; i++)
+				for (int i = SMOKE_PARTICLES; i >= 0; --i)
 				{
 					if (!bKeys[GLFW_KEY_A])
 					{
@@ -636,8 +653,8 @@ int main(int argc, char** argv)
 
 			//get the boost sprites spinning
 			fBoostRotation += 20.0f * fDeltaTime;
-			if (fBoostRotation >= 360)
-				fBoostRotation = 0;
+			if (fBoostRotation >= 360.0f)
+				fBoostRotation = 0.0f;
 
 			fRotationArr[0] = fBoostRotation;
 
@@ -694,9 +711,6 @@ int main(int argc, char** argv)
 		}
 
 		drawSwapBuffers();
-
-		//printf("dt: %f\n", fDeltaTime);
-		dLastTime = dNowTime;
 	}
 
 	pthread_mutex_destroy(&mutex1);

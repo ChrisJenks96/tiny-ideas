@@ -60,7 +60,6 @@ bool drawInit()
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 	return true;
@@ -161,6 +160,13 @@ void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 	glScalef(fX2, fY2, 1.0f);
 }
 
+void drawTransformPoint(float fX, float fY)
+{
+	//flip y
+	fY = (SCR_HEIGHT - fY);
+	glTranslatef(fX, fY, 0.0f);
+}
+
 void drawQuad()
 {
 	glBegin(GL_QUADS);
@@ -168,6 +174,13 @@ void drawQuad()
 	glTexCoord2i(1,0); glVertex2f(1.0f, 0.0f);
 	glTexCoord2i(1,1); glVertex2f(1.0f, 1.0f);
 	glTexCoord2i(0,1); glVertex2f(0.0f, 1.0f);
+	glEnd();
+}
+
+void drawPoint()
+{
+	glBegin(GL_POINTS);
+	glVertex2f(0.0f, 0.0f);
 	glEnd();
 }
 
@@ -199,24 +212,24 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 	float fOriginalfX = fX;
 
 	//the size of each quad in GL
-	float sMaxCharInRow = fX + (FONT_MAX_CHARS_PER_ROW * fQuadSize);
+	float fMaxCharInRow = fX + (FONT_MAX_CHARS_PER_ROW * fQuadSize);
 
 	//width and height are the same, will always be multiple of 8
-	float max = (1.0f / FONT_SIZE) * FONT_CHAR_SIZE;
+	float fMax = (1.0f / FONT_SIZE) * FONT_CHAR_SIZE;
 
 	int iCount = 0;
 	while (iCount < iLen)
 	{
 		uint16_t ucStrCharVal = cStr[iCount] - 32; //ascii val to bitmap index
-		float fUVX = (ucStrCharVal % FONT_CHARS_PER_ROW) * max;
-		float fUVY = (ucStrCharVal / FONT_CHARS_PER_ROW) * max;
+		float fUVX = (ucStrCharVal % FONT_CHARS_PER_ROW) * fMax;
+		float fUVY = (ucStrCharVal / FONT_CHARS_PER_ROW) * fMax;
 
 		drawQuadSection(fX, fY, FONT_SIZE, FONT_SIZE, //pos and font details
 			fQuadSize, fQuadSize, //the quad size
-			fUVX, fUVY, fUVX+max, fUVY+max); //the tex coords offset
+			fUVX, fUVY, fUVX+fMax, fUVY+fMax); //the tex coords offset
 
 		fX += fTextSepSize;
-		if (fX >= sMaxCharInRow)
+		if (fX >= fMaxCharInRow)
 		{
 			fX = fOriginalfX;
 			fY += fQuadSize;
@@ -237,22 +250,27 @@ void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize,
 void drawStars(float fXOffset, float* pCamY)
 {
 	int iCount = 0;
+	int shipPos = (int)*pCamY + SCR_HEIGHT;
 	drawTextureUnbind();
+	drawColor3f(1.0f, 1.0f, 1.0f);
 
 	for (int i = 0; i < STAR_NUM; i+=2)
 	{
-		//if the star is out of scope, move it to the next frame
-		if ((*pCamY+SCR_HEIGHT) < -cStarOffsets[i+1])
+		//if the star falls below the rocket, is out of scope, move it to the next frame
+		if (shipPos < -cStarOffsets[i+1])
 		{
 			cStarOffsets[i+1] += (SCR_HEIGHT + 20);
 		}
 
-		float fSize = cBoostXOffsets[iCount++] * 0.01f;
-		drawColor3f(fSize, fSize, fSize);
-		drawPushMatrix();
-		drawTransformQuad(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1], fSize, fSize, NULL);
-		drawQuad();
-		drawPopMatrix();
+		//only draw if the star coords are within the screen frame
+		else if (shipPos <= (-cStarOffsets[i+1]+SCR_HEIGHT))
+		{
+			glPointSize(cBoostXOffsets[iCount++] * 0.01f);
+			drawPushMatrix();
+			drawTransformPoint(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1]);
+			drawPoint();
+			drawPopMatrix();
+		}
 	}
 }
 

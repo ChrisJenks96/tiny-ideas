@@ -118,7 +118,7 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 		return false;
 	}
 
-	iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
+	iClientState = CLIENT_STATE_CONNECTING;
 	return true;
 }
 
@@ -132,6 +132,10 @@ void* clientUpdate()
 		myData.fPos[0] = fClientPos[0];
 		myData.fPos[1] = fClientPos[1];
 		int iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
+		if (iBytesSent > 0)
+		{
+
+		}
 		
 		/*struct timeval timeout;
 		timeout.tv_sec = 1;
@@ -139,7 +143,11 @@ void* clientUpdate()
 		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));*/
 		//receive data back from the server
 		int iRecSize = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
-		
+		if (iRecSize > 0)
+		{
+
+		}
+
 		pthread_mutex_unlock(&mutex1);
 	}
 
