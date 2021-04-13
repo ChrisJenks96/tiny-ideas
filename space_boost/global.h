@@ -16,6 +16,8 @@
 #define SCR_HEIGHT 480
 #define HALF_SCR_HEIGHT (SCR_HEIGHT / 2)
 
+#define TARGET_FPS 1.0 / 30.0
+
 #define STATE_MENU 0
 #define STATE_GAME 1
 

@@ -18,7 +18,7 @@ INCLUDES =
 
 LFLAGS =
 
-LIBS =
+LIBS = -lm
 
 SRCS = sb_server.c
 

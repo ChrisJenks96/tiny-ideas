@@ -339,368 +339,371 @@ int main(int argc, char** argv)
 	{
 		dNowTime = glfwGetTime();
 		fDeltaTime = (dNowTime - dLastTime);
-		//printf("dt: %f\n", (fDeltaTime * 1000.0f));
-		dLastTime = dNowTime;
-
-		//showFPS();
 
 		//updates
 
-		if (state == STATE_MENU)
+		if ((dNowTime - dLastTime) >= TARGET_FPS)
 		{
-			//quit if the escape button is pressed or the window close event is triggered
-			bQuit = glfwWindowShouldClose(pWindow) | (cLastKey == 0);
-
-			//press enter and proceed to the game
-			if (cLastKey == 1)
+			if (state == STATE_MENU)
 			{
-				if (iMenuOptions == 0)
+				//quit if the escape button is pressed or the window close event is triggered
+				bQuit = glfwWindowShouldClose(pWindow) | (cLastKey == 0);
+
+				//press enter and proceed to the game
+				if (cLastKey == 1)
 				{
-					//init the game assets
-					gameInit();
-					state = STATE_GAME;
+					if (iMenuOptions == 0)
+					{
+						//init the game assets
+						gameInit();
+						state = STATE_GAME;
+					}
+
+					else if (iMenuOptions == 1)
+					{
+						bClientConnectedToHost = true;
+						//create a client
+						if (!bClientInit)
+						{
+							bClientConnectedToHost = clientInit();
+							if (iClientState == CLIENT_STATE_INIT_SUCCESS)
+							{
+								pthread_mutex_init(&mutex1, NULL);
+								bClientInit = true;
+							}
+						}
+
+						if (bClientConnectedToHost)
+						{
+							//if the client cannot connect and we've picked to do multiplayer,
+							//reset out state back to menu
+							bClientConnectedToHost = clientConnect(cIPAddrText, 7654, 5000);
+							clientIPFree();
+
+							//get a set id from the server
+							if (iClientState == CLIENT_STATE_CONNECTING)
+							{
+								//tell the server everything is good on client end and we're connecting
+								//this is set to false on client end if we disconnect
+								myData.bConnected = true;
+								clientGetNewID();
+								if (iClientState == CLIENT_STATE_NEW_ID)
+								{
+									//init the game assets
+									gameInit();
+									state = STATE_GAME;
+								}
+
+								else
+								{
+									bClientConnectedToHost = false;
+								}
+							}
+						}				
+					}
 				}
 
-				else if (iMenuOptions == 1)
+				//press up (multiplayer -> singleplayer)
+				else if (cLastKey == 9)
 				{
-					bClientConnectedToHost = true;
-					//create a client
-					if (!bClientInit)
+					iMenuOptions -= 1;
+					if (iMenuOptions < 0)
 					{
-						bClientConnectedToHost = clientInit();
-						if (iClientState == CLIENT_STATE_INIT_SUCCESS)
+						iMenuOptions = 0;
+					}
+				}
+
+				//press down (singleplayer -> multiplayer)
+				else if (cLastKey == 8)
+				{
+					iMenuOptions += 1;
+					if (iMenuOptions > 1)
+					{
+						iMenuOptions = 1;
+					}
+				}
+
+				//only show the ip box if you have selected multiplayer
+				else if (iMenuOptions == 1 && ((cLastKey >= 32 && cLastKey <= 122) || cLastKey == 3))
+				{
+					//backspace
+					if (cLastKey == 3)
+					{
+						iIPTextLength -= 1;
+						cIPAddrText[iIPTextLength] = 0;
+						if (iIPTextLength < 0)
 						{
-							pthread_mutex_init(&mutex1, NULL);
-							bClientInit = true;
+							iIPTextLength = 0;
 						}
 					}
 
+					else
+					{
+						cIPAddrText[iIPTextLength++] = cLastKey;
+						if (iIPTextLength > IP_MAX_TEXT)
+						{
+							iIPTextLength = IP_MAX_TEXT;
+						}
+					}
+				}
+			}
+
+			else if (state == STATE_GAME)
+			{
+				if (cLastKey == 0)
+				{
+					state = STATE_MENU;
+
+					//disconnect from the server, kill the receiving thread
 					if (bClientConnectedToHost)
 					{
-						//if the client cannot connect and we've picked to do multiplayer,
-						//reset out state back to menu
-						bClientConnectedToHost = clientConnect(cIPAddrText, 7654, 5000);
-						clientIPFree();
-
-						//get a set id from the server
-						if (iClientState == CLIENT_STATE_CONNECTING)
-						{
-							//tell the server everything is good on client end and we're connecting
-							//this is set to false on client end if we disconnect
-							myData.bConnected = true;
-							clientGetNewID();
-							if (iClientState == CLIENT_STATE_NEW_ID)
-							{
-								//init the game assets
-								gameInit();
-								state = STATE_GAME;
-							}
-
-							else
-							{
-								bClientConnectedToHost = false;
-							}
-						}
-					}				
-				}
-			}
-
-			//press up (multiplayer -> singleplayer)
-			else if (cLastKey == 9)
-			{
-				iMenuOptions -= 1;
-				if (iMenuOptions < 0)
-				{
-					iMenuOptions = 0;
-				}
-			}
-
-			//press down (singleplayer -> multiplayer)
-			else if (cLastKey == 8)
-			{
-				iMenuOptions += 1;
-				if (iMenuOptions > 1)
-				{
-					iMenuOptions = 1;
-				}
-			}
-
-			//only show the ip box if you have selected multiplayer
-			else if (iMenuOptions == 1 && ((cLastKey >= 32 && cLastKey <= 122) || cLastKey == 3))
-			{
-				//backspace
-				if (cLastKey == 3)
-				{
-					iIPTextLength -= 1;
-					cIPAddrText[iIPTextLength] = 0;
-					if (iIPTextLength < 0)
-					{
-						iIPTextLength = 0;
+						//send a packet that tells the server we're done
+						myData.bConnected = false;
+						//make main thread wait till the networking thread is done
+						pthread_join(thread1, NULL);
 					}
+				}
+
+				if (bClientConnectedToHost)
+				{ 
+					if (iClientState == CLIENT_STATE_NEW_ID)
+					{
+						//update the ships data
+						Ship1.mMovObj.mX = globalData.data[iServerID].fPos[0];
+						Ship1.mMovObj.mY = globalData.data[iServerID].fPos[1];
+
+						//setup the thread to run the send/rec from server
+						int iRet;
+						if ((iRet = pthread_create(&thread1, NULL, clientUpdate, NULL)))
+						{
+							printf("Thread creation failed!\n");
+							//kill the connection and go back to the menu
+						}
+
+						//update to the client being in the online game
+						iClientState = CLIENT_STATE_IN_GAME;
+					}
+
+					else if (iClientState == CLIENT_STATE_SERVER_FULL)
+					{
+						//kill the connection and go back to the menu
+						bClientConnectedToHost = false;
+						//revert back to the menu if the max capacity is limited
+						state = STATE_MENU;
+					}
+
+					else if (iClientState == CLIENT_STATE_IN_GAME)
+					{
+						//update the client positions to send off to the server
+						fClientPos[0] = Ship1.mMovObj.mX;
+						fClientPos[1] = Ship1.mMovObj.mY;
+					}
+				}
+
+				if (gameTimerSeconds >= 0)
+				{
+					mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
+				}
+				
+				//get the boost sprite to render in the current viewport
+				boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
+
+				//collision checks against the existing boost sprites
+				for (int i = iBoostStartID; i < iBoostEndID; i++)
+				{
+					if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
+					{
+						//if we hit a boost sprite, then propell the ship in the direction of facing
+						boostShipTrajectoryUpdate(&Ship1, &fBoostRotation);
+					}
+				}
+
+				backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
+
+				//update the camera relative to the ships x/y
+				cameraUpdate(&fCamY, &Ship1, fDeltaTime);
+
+				iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
+				if (iCurrentAltitude > iCurrentHighScore)
+				{
+					iCurrentHighScore = iCurrentAltitude;
+				}
+
+				sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
+				sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
+
+				gameTimerCounter += 1.0f * fDeltaTime;
+				if (gameTimerCounter > 1.0f)
+				{
+					gameTimerCounter = 0.0f;
+					gameTimerUpdate(&cGameTimerText[0], 
+						&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
+				}
+			}
+
+			cLastKey = -1;
+			
+			//rendering
+
+			if (state == STATE_MENU)
+			{
+				drawClear(0.0f, 0.0f, 0.0f, 0.0f);
+
+				drawTextureBind(uiT[2]);
+				if (iMenuOptions == 0)
+				{
+					drawColor3f(1.0f, 1.0f, 1.0f);
 				}
 
 				else
 				{
-					cIPAddrText[iIPTextLength++] = cLastKey;
-					if (iIPTextLength > IP_MAX_TEXT)
-					{
-						iIPTextLength = IP_MAX_TEXT;
-					}
-				}
-			}
-		}
-
-		else if (state == STATE_GAME)
-		{
-			if (cLastKey == 0)
-			{
-				state = STATE_MENU;
-
-				//disconnect from the server, kill the receiving thread
-				if (bClientConnectedToHost)
-				{
-					//send a packet that tells the server we're done
-					myData.bConnected = false;
-					//make main thread wait till the networking thread is done
-					pthread_join(thread1, NULL);
-				}
-			}
-
-			if (bClientConnectedToHost)
-			{ 
-				if (iClientState == CLIENT_STATE_NEW_ID)
-				{
-					//update the ships data
-					Ship1.mMovObj.mX = globalData.data[iServerID].fPos[0];
-					Ship1.mMovObj.mY = globalData.data[iServerID].fPos[1];
-
-					//setup the thread to run the send/rec from server
-					int iRet;
-					if ((iRet = pthread_create(&thread1, NULL, clientUpdate, NULL)))
-					{
-						printf("Thread creation failed!\n");
-						//kill the connection and go back to the menu
-					}
-
-					//update to the client being in the online game
-					iClientState = CLIENT_STATE_IN_GAME;
-				}
-
-				else if (iClientState == CLIENT_STATE_SERVER_FULL)
-				{
-					//kill the connection and go back to the menu
-					bClientConnectedToHost = false;
-					//revert back to the menu if the max capacity is limited
-					state = STATE_MENU;
-				}
-
-				else if (iClientState == CLIENT_STATE_IN_GAME)
-				{
-					//update the client positions to send off to the server
-					fClientPos[0] = Ship1.mMovObj.mX;
-					fClientPos[1] = Ship1.mMovObj.mY;
-				}
-			}
-
-			if (gameTimerSeconds >= 0)
-			{
-				mainShipObjectUpdate(&Ship1, &bKeys[0], fDeltaTime);
-			}
-			
-			//get the boost sprite to render in the current viewport
-			boostGetStartEndID(&fCamY, &iBoostStartID, &iBoostEndID);
-
-			//collision checks against the existing boost sprites
-			for (int i = iBoostStartID; i < iBoostEndID; i++)
-			{
-				if (moveableObjectCollisionUpdate(&Ship1.mMovObj, cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE))
-				{
-					//if we hit a boost sprite, then propell the ship in the direction of facing
-					boostShipTrajectoryUpdate(&Ship1, &fBoostRotation);
-				}
-			}
-
-			backgroundUpdate(&fBkgFadeFactor, &Ship1, fDeltaTime);
-
-			//update the camera relative to the ships x/y
-			cameraUpdate(&fCamY, &Ship1, fDeltaTime);
-
-			iCurrentAltitude = -(int)(Ship1.mMovObj.mY - SCR_HEIGHT + SHIP_SIZE);
-			if (iCurrentAltitude > iCurrentHighScore)
-			{
-				iCurrentHighScore = iCurrentAltitude;
-			}
-
-			sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", iCurrentAltitude);
-			sprintf(&cFontHSText[0], "HIGH SCORE: %i", iCurrentHighScore);
-
-			gameTimerCounter += 1.0f * fDeltaTime;
-			if (gameTimerCounter > 1.0f)
-			{
-				gameTimerCounter = 0.0f;
-				gameTimerUpdate(&cGameTimerText[0], 
-					&gameTimerSeconds, &gameTimerMinutes, &gameTimerHours);
-			}
-		}
-
-		cLastKey = -1;
-		
-		//rendering
-
-		if (state == STATE_MENU)
-		{
-			drawClear(0.0f, 0.0f, 0.0f, 0.0f);
-
-			drawTextureBind(uiT[2]);
-			if (iMenuOptions == 0)
-			{
-				drawColor3f(1.0f, 1.0f, 1.0f);
-			}
-
-			else
-			{
-				drawColor3f(0.3f, 0.3f, 0.3f);
-			}
-			
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", 18, true);
-			
-			if (iMenuOptions == 1)
-			{
-				drawColor3f(1.0f, 1.0f, 1.0f);
-			}
-
-			else
-			{
-				drawColor3f(0.3f, 0.3f, 0.3f);
-			}
-
-			drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", 16, true);
-			drawColor3f(1.0f, 1.0f, 1.0f);
-
-			if (iMenuOptions == 1)
-			{
-				drawColor3f(1.0f, 1.0f, 1.0f);
-
-				switch (iClientState)
-				{
-					case CLIENT_STATE_NULL:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 14, true);
-					break; 
-					case CLIENT_STATE_INIT_FAILED:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", 22, true);
-					break; 
-					case CLIENT_STATE_INIT_SUCCESS:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: INIT SUCCESSFUL", 23, true);
-					break; 
-					case CLIENT_STATE_CONNECTING:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTING...", 21, true);
-					break; 
-					case CLIENT_STATE_CONNECTING_FAILED:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION FAILED", 25, true);
-					break; 
-					case CLIENT_STATE_CONNECTING_SUCCESS:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", 29, true);
-					break; 
-					case CLIENT_STATE_NEW_ID:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", 14, true);
-					break; 
-					case CLIENT_STATE_SERVER_FULL:
-					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", 14, true);
-					break; 
+					drawColor3f(0.3f, 0.3f, 0.3f);
 				}
 				
+				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 25.0f, 16.0f, 9.0f, "SINGLE PLAYER GAME", 18, true);
+				
+				if (iMenuOptions == 1)
+				{
+					drawColor3f(1.0f, 1.0f, 1.0f);
+				}
+
+				else
+				{
+					drawColor3f(0.3f, 0.3f, 0.3f);
+				}
+
+				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 50.0f, 16.0f, 9.0f, "MULTIPLAYER GAME", 16, true);
 				drawColor3f(1.0f, 1.0f, 1.0f);
-				drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, iIPTextLength, true);
-				drawTextureUnbind();
-				drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
-			}
-		}
 
-		else if (state == STATE_GAME)
-		{
-			drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
-			0.80f * fBkgFadeFactor, fCamY);
-
-			drawStars(0.0f, &fCamY);
-			if (Ship1.mThrottle)
-			{
-				drawTextureBind(uiT[4]);
-				for (int i = SMOKE_PARTICLES; i >= 0; --i)
+				if (iMenuOptions == 1)
 				{
-					if (!bKeys[GLFW_KEY_A])
+					drawColor3f(1.0f, 1.0f, 1.0f);
+
+					switch (iClientState)
 					{
-						drawThrust(Ship1.mMovObj.mX - 2.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+						case CLIENT_STATE_NULL:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 14, true);
+						break; 
+						case CLIENT_STATE_INIT_FAILED:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: FAILED TO INIT", 22, true);
+						break; 
+						case CLIENT_STATE_INIT_SUCCESS:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: INIT SUCCESSFUL", 23, true);
+						break; 
+						case CLIENT_STATE_CONNECTING:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTING...", 21, true);
+						break; 
+						case CLIENT_STATE_CONNECTING_FAILED:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION FAILED", 25, true);
+						break; 
+						case CLIENT_STATE_CONNECTING_SUCCESS:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: CONNECTION SUCCESSFUL", 29, true);
+						break; 
+						case CLIENT_STATE_NEW_ID:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "CLIENT: NEW ID", 14, true);
+						break; 
+						case CLIENT_STATE_SERVER_FULL:
+						drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", 14, true);
+						break; 
 					}
-
-					if (!bKeys[GLFW_KEY_D])
-					{
-						drawThrust(Ship1.mMovObj.mX + 20.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
-					}
-				}
-			}
-			
-			drawTextureBind(uiT[3]);
-
-			//get the boost sprites spinning
-			fBoostRotation += 20.0f * fDeltaTime;
-			if (fBoostRotation >= 360.0f)
-				fBoostRotation = 0.0f;
-
-			fRotationArr[0] = fBoostRotation;
-
-			for (int i = iBoostStartID; i < iBoostEndID; i++)
-			{
-				drawPushMatrix();
-				drawTransformQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE,
-					fRotationArr);
-				drawQuad();
-				drawPopMatrix();
-			}
-
-			//reset the rotation back to the original value for rendering the rest of the objects
-			fRotationArr[0] = 0.0f;
-
-			drawTextureBind(uiT[0]);
-			drawPushMatrix();
-			drawTransformQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE,
-					fRotationArr);
-			drawQuad();
-			drawPopMatrix();
-
-			//if its multiplayer, then draw the other clients excluding us
-			if (iClientState == CLIENT_STATE_IN_GAME)
-			{
-				for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
-				{
-					if (globalData.data[i].cId != iServerID && globalData.data[i].bConnected)
-					{
-						drawPushMatrix();
-						drawTransformQuad(globalData.data[i].fPos[0], globalData.data[i].fPos[1], 
-							SHIP_SIZE, SHIP_SIZE, fRotationArr);
-						drawQuad();
-						drawPopMatrix();
-					}
+					
+					drawColor3f(1.0f, 1.0f, 1.0f);
+					drawText(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, iIPTextLength, true);
+					drawTextureUnbind();
+					drawBox(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
 				}
 			}
 
-			drawTextureBind(uiT[1]);
-			int iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
-			for (int i = 0; i < iFuelCellsRemaining; i++)
+			else if (state == STATE_GAME)
 			{
+				drawClear(0.33f * fBkgFadeFactor, 0.56f * fBkgFadeFactor, 
+				0.80f * fBkgFadeFactor, fCamY);
+
+				drawStars(0.0f, &fCamY);
+				if (Ship1.mThrottle)
+				{
+					drawTextureBind(uiT[4]);
+					for (int i = SMOKE_PARTICLES; i >= 0; --i)
+					{
+						if (!bKeys[GLFW_KEY_A])
+						{
+							drawThrust(Ship1.mMovObj.mX - 2.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+						}
+
+						if (!bKeys[GLFW_KEY_D])
+						{
+							drawThrust(Ship1.mMovObj.mX + 20.0f, Ship1.mMovObj.mY + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * fDeltaTime);
+						}
+					}
+				}
+				
+				drawTextureBind(uiT[3]);
+
+				//get the boost sprites spinning
+				fBoostRotation += 20.0f * fDeltaTime;
+				if (fBoostRotation >= 360.0f)
+					fBoostRotation = 0.0f;
+
+				fRotationArr[0] = fBoostRotation;
+
+				for (int i = iBoostStartID; i < iBoostEndID; i++)
+				{
+					drawPushMatrix();
+					drawTransformQuad(cBoostXOffsets[i] * BOOST_EXTEND_X, -BOOST_Y_INC * i, BOOST_SIZE, BOOST_SIZE,
+						fRotationArr);
+					drawQuad();
+					drawPopMatrix();
+				}
+
+				//reset the rotation back to the original value for rendering the rest of the objects
+				fRotationArr[0] = 0.0f;
+
+				drawTextureBind(uiT[0]);
 				drawPushMatrix();
-				drawTransformQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y,
-					fRotationArr);
+				drawTransformQuad(Ship1.mMovObj.mX, Ship1.mMovObj.mY, SHIP_SIZE, SHIP_SIZE,
+						fRotationArr);
 				drawQuad();
 				drawPopMatrix();
+
+				//if its multiplayer, then draw the other clients excluding us
+				if (iClientState == CLIENT_STATE_IN_GAME)
+				{
+					for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
+					{
+						if (globalData.data[i].cId != iServerID && globalData.data[i].bConnected)
+						{
+							drawPushMatrix();
+							drawTransformQuad(globalData.data[i].fPos[0], globalData.data[i].fPos[1], 
+								SHIP_SIZE, SHIP_SIZE, fRotationArr);
+							drawQuad();
+							drawPopMatrix();
+						}
+					}
+				}
+
+				drawTextureBind(uiT[1]);
+				int iFuelCellsRemaining = (int)(Ship1.mFuelRemaining * 0.1f);
+				for (int i = 0; i < iFuelCellsRemaining; i++)
+				{
+					drawPushMatrix();
+					drawTransformQuad(10 + ((FUELBAR_SIZE_X + FUEL_CELL_SPRITE_SEPERATION) * i), 10 + fCamY, FUELBAR_SIZE_X, FUELBAR_SIZE_Y,
+						fRotationArr);
+					drawQuad();
+					drawPopMatrix();
+				}
+
+				drawTextureBind(uiT[2]);
+				drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText, strlen(cFontAltitudeText), false);
+				drawText(10, 50 + fCamY, 16, 9, cFontHSText, strlen(cFontHSText), false);
+				drawText(10, 70 + fCamY, 16, 9, cGameTimerText, strlen(cGameTimerText), false);
 			}
 
-			drawTextureBind(uiT[2]);
-			drawText(10, 30 + fCamY, 16, 9, cFontAltitudeText, strlen(cFontAltitudeText), false);
-			drawText(10, 50 + fCamY, 16, 9, cFontHSText, strlen(cFontHSText), false);
-			drawText(10, 70 + fCamY, 16, 9, cGameTimerText, strlen(cGameTimerText), false);
-		}
+			showFPS();
 
-		drawSwapBuffers();
+			drawSwapBuffers();
+
+			dLastTime = dNowTime;
+		}
 	}
 
 	pthread_mutex_destroy(&mutex1);

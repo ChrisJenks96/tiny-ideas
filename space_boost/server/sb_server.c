@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <time.h>
+#include <math.h>
+
 #define SCR_WIDTH 640
 #define SHIP_SIZE 32
 #define SCR_HEIGHT 480
@@ -15,6 +18,8 @@
 #define MAX_CLIENTS 4
 
 #define SHIP_POS_X_DIFF (SCR_WIDTH / 2) - (SHIP_SIZE / 2)
+
+#define TARGET_FPS 1.0 / 30.0
 
 typedef struct DATA_PACKET
 {
@@ -40,6 +45,13 @@ static DATA_PACKET_GLOBAL globalData;
 static DATA_PACKET data;
 //storing all the client information for sending information back out to them
 static CLIENT_ADDR clients;
+
+static double dNow, dLast;
+
+static double clockToMilliseconds(clock_t ticks){
+    // units/(units/time) => time (seconds) * 1000 = milliseconds
+    return (ticks/(double)CLOCKS_PER_SEC)*1000.0;
+}
 
 int main(void)
 {
@@ -76,83 +88,91 @@ int main(void)
 	globalData.data[2].cId = -1;
 	globalData.data[3].cId = -1;
 
+	dLast = 0;
+
 	while (1) 
 	{
-		/*struct timeval timeout;
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 100;
-		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));*/
-
-		iRecSize = recvfrom(iSock, &data, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);
-		if (iRecSize > 0)
+		dNow = clockToMilliseconds(clock());
+		if ((dNow - dLast) >= TARGET_FPS)
 		{
-			//allocate the client a new id
-			if (data.cId == -1)
+			/*struct timeval timeout;
+			timeout.tv_sec = 1;
+			timeout.tv_usec = 0;
+			setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));*/
+
+			iRecSize = recvfrom(iSock, &data, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, &fromlen);
+			if (iRecSize > 0)
 			{
-				//see if the server has room for a new client
-				if (iCurrentNumOfClients < MAX_CLIENTS)
+				//allocate the client a new id
+				if (data.cId == -1)
 				{
-					for (int i = 0; i < MAX_CLIENTS; i++)
+					//see if the server has room for a new client
+					if (iCurrentNumOfClients < MAX_CLIENTS)
 					{
-						if (globalData.data[i].cId == -1)
+						for (int i = 0; i < MAX_CLIENTS; i++)
 						{
-							globalData.data[i].fPos[0] = (SHIP_POS_X_DIFF + (SHIP_SIZE * (i+1))) - (SHIP_SIZE * MAX_CLIENTS) / 2;
-							globalData.data[i].fPos[1] = SCR_HEIGHT - SHIP_SIZE;
-							globalData.data[i].cId = i;
-							globalData.data[i].bConnected = true;
-							globalData.iStatus = i;
-							//save the client whos just connected's information
-							clients.addr[i] = sa;
-							iCurrentNumOfClients++;
-							break;
+							if (globalData.data[i].cId == -1)
+							{
+								globalData.data[i].fPos[0] = (SHIP_POS_X_DIFF + (SHIP_SIZE * (i+1))) - (SHIP_SIZE * MAX_CLIENTS) / 2;
+								globalData.data[i].fPos[1] = SCR_HEIGHT - SHIP_SIZE;
+								globalData.data[i].cId = i;
+								globalData.data[i].bConnected = true;
+								globalData.iStatus = i;
+								//save the client whos just connected's information
+								clients.addr[i] = sa;
+								iCurrentNumOfClients++;
+								break;
+							}
 						}
+					}
+
+					else
+					{
+						printf("Server at Max Capacity (%i/%i)\n", iCurrentNumOfClients, MAX_CLIENTS);
+						globalData.iStatus = -2;
 					}
 				}
 
+				//the client wishes to disconnect from the server
+				else if (!data.bConnected && data.cId != -1)
+				{
+					if (globalData.data[data.cId].cId != -1)
+					{
+						//reset all the data for the client
+						memset(&globalData.data[data.cId], 0, sizeof(DATA_PACKET));
+						globalData.data[data.cId].cId = -1;
+						//allocate a new slot for a possible new client
+						iCurrentNumOfClients--;
+						printf("CONNECTED %i\n", iCurrentNumOfClients);
+					}	
+				}
+
+				//sending data back to the server from the client, this will have all the client data in
 				else
 				{
-					printf("Server at Max Capacity (%i/%i)\n", iCurrentNumOfClients, MAX_CLIENTS);
-					globalData.iStatus = -2;
+					globalData.data[data.cId].fPos[0] = data.fPos[0];
+					globalData.data[data.cId].fPos[1] = data.fPos[1];
 				}
 			}
 
-			//the client wishes to disconnect from the server
-			else if (!data.bConnected && data.cId != -1)
+			//if we have some clients, we have to transmit the data across the network
+			if (iCurrentNumOfClients > 0)
 			{
-				if (globalData.data[data.cId].cId != -1)
+				printf("Client number: %i\n", iCurrentNumOfClients);
+				for (int i = 0; i < MAX_CLIENTS; i++)
 				{
-					//reset all the data for the client
-					memset(&globalData.data[data.cId], 0, sizeof(DATA_PACKET));
-					globalData.data[data.cId].cId = -1;
-					//allocate a new slot for a possible new client
-					iCurrentNumOfClients--;
-					printf("CONNECTED %i\n", iCurrentNumOfClients);
-				}	
-			}
-
-			//sending data back to the server from the client, this will have all the client data in
-			else
-			{
-				globalData.data[data.cId].fPos[0] = data.fPos[0];
-				globalData.data[data.cId].fPos[1] = data.fPos[1];
-			}
-		}
-
-		//if we have some clients, we have to transmit the data across the network
-		if (iCurrentNumOfClients > 0)
-		{
-			printf("Client number: %i\n", iCurrentNumOfClients);
-			for (int i = 0; i < MAX_CLIENTS; i++)
-			{
-				if (globalData.data[i].bConnected)
-				{
-					sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
-					printf("%i %f %f\n", globalData.data[i].cId,
-						globalData.data[i].fPos[0], globalData.data[i].fPos[1]);
+					if (globalData.data[i].bConnected)
+					{
+						sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
+						printf("%i %f %f\n", globalData.data[i].cId,
+							globalData.data[i].fPos[0], globalData.data[i].fPos[1]);
+					}
 				}
+
+				printf("\n");
 			}
 
-			printf("\n");
+			dLast = dNow;
 		}
 	}
 }
