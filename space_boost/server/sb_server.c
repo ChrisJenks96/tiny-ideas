@@ -20,11 +20,12 @@ typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
 	float fPos[2]; //x&y
+	bool bConnected; //whether we are connected to the server or not
 } DATA_PACKET;
 
 typedef struct DATA_PACKET_GLOBAL
 {
-	int iMyID; //the id of this specific client so we don't have to index ourselves the data below
+	int iStatus; //the status all this data, normally will default to last client id, but can be used to show server full etc...
 	DATA_PACKET data[MAX_CLIENTS];
 } DATA_PACKET_GLOBAL;
 
@@ -56,6 +57,11 @@ int main(void)
 	fromlen = sizeof(sa);
 
 	iSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	//allows for multiple addr and port (in case we crash and don't close the socket down correctly...)
+	setsockopt(iSock, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+	setsockopt(iSock, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
+	
 	if (bind(iSock, (struct sockaddr *)&sa, sizeof(sa)) == -1)
 	{
 		perror("error bind failed");
@@ -63,7 +69,7 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 
-	//set the data
+	//set the data, 0 will set bConnected to false...
 	memset(&globalData, 0, sizeof(DATA_PACKET_GLOBAL));
 	globalData.data[0].cId = -1;
 	globalData.data[1].cId = -1;
@@ -83,22 +89,45 @@ int main(void)
 			//allocate the client a new id
 			if (data.cId == -1)
 			{
+				//see if the server has room for a new client
 				if (iCurrentNumOfClients < MAX_CLIENTS)
 				{
-					globalData.data[iCurrentNumOfClients].fPos[0] = (SHIP_POS_X_DIFF + (SHIP_SIZE * (iCurrentNumOfClients+1))) - (SHIP_SIZE * MAX_CLIENTS) / 2;
-					globalData.data[iCurrentNumOfClients].fPos[1] = SCR_HEIGHT - SHIP_SIZE;
-					globalData.data[iCurrentNumOfClients].cId = iCurrentNumOfClients;
-					globalData.iMyID = iCurrentNumOfClients;
-					//save the client whos just connected's information
-					clients.addr[iCurrentNumOfClients] = sa;
-					iCurrentNumOfClients++;
+					for (int i = 0; i < MAX_CLIENTS; i++)
+					{
+						if (globalData.data[i].cId == -1)
+						{
+							globalData.data[i].fPos[0] = (SHIP_POS_X_DIFF + (SHIP_SIZE * (i+1))) - (SHIP_SIZE * MAX_CLIENTS) / 2;
+							globalData.data[i].fPos[1] = SCR_HEIGHT - SHIP_SIZE;
+							globalData.data[i].cId = i;
+							globalData.data[i].bConnected = true;
+							globalData.iStatus = i;
+							//save the client whos just connected's information
+							clients.addr[i] = sa;
+							iCurrentNumOfClients++;
+							break;
+						}
+					}
 				}
 
 				else
 				{
 					printf("Server at Max Capacity (%i/%i)\n", iCurrentNumOfClients, MAX_CLIENTS);
-					globalData.iMyID = -2;
+					globalData.iStatus = -2;
 				}
+			}
+
+			//the client wishes to disconnect from the server
+			else if (!data.bConnected && data.cId != -1)
+			{
+				if (globalData.data[data.cId].cId != -1)
+				{
+					//reset all the data for the client
+					memset(&globalData.data[data.cId], 0, sizeof(DATA_PACKET));
+					globalData.data[data.cId].cId = -1;
+					//allocate a new slot for a possible new client
+					iCurrentNumOfClients--;
+					printf("CONNECTED %i\n", iCurrentNumOfClients);
+				}	
 			}
 
 			//sending data back to the server from the client, this will have all the client data in
@@ -112,11 +141,15 @@ int main(void)
 		//if we have some clients, we have to transmit the data across the network
 		if (iCurrentNumOfClients > 0)
 		{
-			for (int i = 0; i < iCurrentNumOfClients; i++)
+			printf("Client number: %i\n", iCurrentNumOfClients);
+			for (int i = 0; i < MAX_CLIENTS; i++)
 			{
-				sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
-				printf("%i %f %f\n", globalData.data[i].cId,
-					globalData.data[i].fPos[0], globalData.data[i].fPos[1]);
+				if (globalData.data[i].bConnected)
+				{
+					sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
+					printf("%i %f %f\n", globalData.data[i].cId,
+						globalData.data[i].fPos[0], globalData.data[i].fPos[1]);
+				}
 			}
 
 			printf("\n");

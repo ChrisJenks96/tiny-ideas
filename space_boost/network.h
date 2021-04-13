@@ -15,13 +15,14 @@
 
 typedef struct DATA_PACKET
 {
-	int8_t cId; //-127-127 (server gives us an iden)
+	int8_t cId; //0-255 (server gives us an iden)
 	float fPos[2]; //x&y
+	bool bConnected; //whether we are connected to the server or not
 } DATA_PACKET;
 
 typedef struct DATA_PACKET_GLOBAL
 {
-	int iMyID; //the id of this specific client so we don't have to index ourselves the data below
+	int iStatus; //the id of this specific client so we don't have to index ourselves the data below
 	DATA_PACKET data[SERVER_MAX_CLIENTS];
 } DATA_PACKET_GLOBAL;
 
@@ -42,7 +43,8 @@ extern pthread_mutex_t mutex1;
 //we're just going to sent all the data from each client over the network
 extern DATA_PACKET_GLOBAL globalData;
 //the data we get from the client
-extern DATA_PACKET data;
+extern DATA_PACKET myData;
+
 extern int iServerID;
 
 extern float fClientPos[2];

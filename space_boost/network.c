@@ -43,7 +43,7 @@ void* clientGetNewID()
 	timeout.tv_usec = 0;
 	setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-	iBytesRec = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);	
+	iBytesRec = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
 	if (iBytesRec == -1)
 	{
 		iClientState = CLIENT_STATE_CONNECTING_FAILED;
@@ -52,16 +52,17 @@ void* clientGetNewID()
 	else
 	{
 		//there has been no packet sent back, so this means we're at capacity on the server
-		if (globalData.iMyID == -2)
+		if (globalData.iStatus == -2)
 		{
 			iClientState = CLIENT_STATE_SERVER_FULL;
 		}
 
 		else
 		{
-			iServerID = globalData.iMyID;
+			//globalData.iStatus holds the last client id added if success
+			iServerID = globalData.iStatus;
 			//sending data back to the server
-			myData.cId = iServerID;
+			myData.cId = globalData.iStatus;
 			//tells us that the handshake packet is received from host
 			iClientState = CLIENT_STATE_NEW_ID;
 		}
@@ -137,15 +138,17 @@ void* clientUpdate()
 
 		}
 		
-		/*struct timeval timeout;
+		struct timeval timeout;
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
-		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));*/
+		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 		//receive data back from the server
 		int iRecSize = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
-		if (iRecSize > 0)
+		if (iRecSize == -1 || !globalData.data[iServerID].bConnected)
 		{
-
+			//change the state to force the client to stop seeking packets from server
+			iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
+			bClientConnectedToHost = false;
 		}
 
 		pthread_mutex_unlock(&mutex1);

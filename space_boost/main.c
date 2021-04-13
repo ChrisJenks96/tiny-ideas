@@ -342,7 +342,7 @@ int main(int argc, char** argv)
 		//printf("dt: %f\n", (fDeltaTime * 1000.0f));
 		dLastTime = dNowTime;
 
-		showFPS();
+		//showFPS();
 
 		//updates
 
@@ -370,6 +370,7 @@ int main(int argc, char** argv)
 						bClientConnectedToHost = clientInit();
 						if (iClientState == CLIENT_STATE_INIT_SUCCESS)
 						{
+							pthread_mutex_init(&mutex1, NULL);
 							bClientInit = true;
 						}
 					}
@@ -384,34 +385,23 @@ int main(int argc, char** argv)
 						//get a set id from the server
 						if (iClientState == CLIENT_STATE_CONNECTING)
 						{
-							//create alt thread that will receive the handshake packet from server without stalling main loop
-							int iRet;
-							pthread_mutex_init(&mutex1, NULL);
-							if ((iRet = pthread_create(&thread1, NULL, clientGetNewID, NULL)))
+							//tell the server everything is good on client end and we're connecting
+							//this is set to false on client end if we disconnect
+							myData.bConnected = true;
+							clientGetNewID();
+							if (iClientState == CLIENT_STATE_NEW_ID)
 							{
-								printf("Thread creation failed!\n");
-								//kill the connection and go back to the menu
+								//init the game assets
+								gameInit();
+								state = STATE_GAME;
+							}
+
+							else
+							{
 								bClientConnectedToHost = false;
 							}
 						}
-					}
-
-					if (bClientConnectedToHost)
-					{
-						if (iClientState == CLIENT_STATE_NEW_ID)
-						{
-							//finish the thread and update the client state
-							pthread_join(thread1, NULL);
-							//init the game assets
-							gameInit();
-							state = STATE_GAME;
-						}
-
-						else
-						{
-							bClientConnectedToHost = false;
-						}
-					}					
+					}				
 				}
 			}
 
@@ -469,10 +459,10 @@ int main(int argc, char** argv)
 				//disconnect from the server, kill the receiving thread
 				if (bClientConnectedToHost)
 				{
-					//change the state to force the client to stop seeking packets from server
-					iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
+					//send a packet that tells the server we're done
+					myData.bConnected = false;
+					//make main thread wait till the networking thread is done
 					pthread_join(thread1, NULL);
-					bClientConnectedToHost = false;
 				}
 			}
 
@@ -682,7 +672,7 @@ int main(int argc, char** argv)
 			{
 				for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
 				{
-					if (globalData.data[i].cId != iServerID && globalData.data[i].cId != -1)
+					if (globalData.data[i].cId != iServerID && globalData.data[i].bConnected)
 					{
 						drawPushMatrix();
 						drawTransformQuad(globalData.data[i].fPos[0], globalData.data[i].fPos[1], 
