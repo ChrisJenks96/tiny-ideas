@@ -32,7 +32,7 @@ static void errorCallback(int error, const char* description)
 	printf("%s\n", description);
 }
 
-bool drawInit()
+bool cDraw::Init()
 {
 	bQuit = false;
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -65,7 +65,7 @@ bool drawInit()
 	return true;
 }
 
-void drawClear(float fR, float fG, float fB, float fCamY)
+void cDraw::Clear(float fR, float fG, float fB, float fCamY)
 {
 	glClearColor(fR, fG, fB, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -76,28 +76,28 @@ void drawClear(float fR, float fG, float fB, float fCamY)
 	glTranslatef(0.0f, fCamY, 0.0f);
 }
 
-void drawSwapBuffers()
+void cDraw::SwapBuffers()
 {
 	glfwSwapBuffers(pWindow);
 	glfwPollEvents();
 }
 
-void drawPushMatrix()
+void cDraw::PushMatrix()
 {
 	glPushMatrix();
 }
 
-void drawPopMatrix()
+void cDraw::PopMatrix()
 {
 	glPopMatrix();
 }
 
-void drawColor3f(float fR, float fG, float fB)
+void cDraw::Color3f(float fR, float fG, float fB)
 {
 	glColor3f(fR, fG, fB);
 }
 
-void drawLine(float fX, float fY, float fX2, float fY2, double fThick)
+void cDraw::Line(float fX, float fY, float fX2, float fY2, double fThick)
 {
 	//flip y
 	fY = (SCR_HEIGHT - fY) - fY2;
@@ -110,7 +110,7 @@ void drawLine(float fX, float fY, float fX2, float fY2, double fThick)
 	glEnd();
 }
 
-void drawBox(float fX, float fY, float fX2, float fY2, float fThick)
+void cDraw::Box(float fX, float fY, float fX2, float fY2, float fThick)
 {
 	fY = (SCR_HEIGHT - fY) - fY2;
 
@@ -137,7 +137,7 @@ void drawBox(float fX, float fY, float fX2, float fY2, float fThick)
 	glEnd();
 }
 
-void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
+void cDraw::TransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 {
 	//flip y
 	fY = (SCR_HEIGHT - fY) - fY2;
@@ -160,14 +160,14 @@ void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal)
 	glScalef(fX2, fY2, 1.0f);
 }
 
-void drawTransformPoint(float fX, float fY)
+void cDraw::TransformPoint(float fX, float fY)
 {
 	//flip y
 	fY = (SCR_HEIGHT - fY);
 	glTranslatef(fX, fY, 0.0f);
 }
 
-void drawQuad()
+void cDraw::Quad()
 {
 	glBegin(GL_QUADS);
 	glTexCoord2i(0,0); glVertex2f(0.0f, 0.0f);
@@ -177,14 +177,14 @@ void drawQuad()
 	glEnd();
 }
 
-void drawPoint()
+void cDraw::Point()
 {
 	glBegin(GL_POINTS);
 	glVertex2f(0.0f, 0.0f);
 	glEnd();
 }
 
-void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
+void cDraw::QuadSection(float fX, float fY, float fWidth, float fHeight,
 	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2)
 {
 	//correction to get y on the correct position
@@ -202,7 +202,7 @@ void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
 	glEnd();
 }
 
-void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre)
+void cDraw::Text(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre)
 {
 	if (bCentre)
 	{
@@ -224,7 +224,7 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 		float fUVX = (ucStrCharVal % FONT_CHARS_PER_ROW) * fMax;
 		float fUVY = (ucStrCharVal / FONT_CHARS_PER_ROW) * fMax;
 
-		drawQuadSection(fX, fY, FONT_SIZE, FONT_SIZE, //pos and font details
+		QuadSection(fX, fY, FONT_SIZE, FONT_SIZE, //pos and font details
 			fQuadSize, fQuadSize, //the quad size
 			fUVX, fUVY, fUVX+fMax, fUVY+fMax); //the tex coords offset
 
@@ -239,20 +239,20 @@ void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const cha
 	}
 }
 
-void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed)
+void cDraw::Thrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed)
 {
-	drawPushMatrix();
-	drawTransformQuad(fX, fY + *fThrustY, fSize, SMOKE_SPRITE_SIZE, NULL);
-	drawQuad();
-	drawPopMatrix();
+	PushMatrix();
+	TransformQuad(fX, fY + *fThrustY, fSize, SMOKE_SPRITE_SIZE, NULL);
+	Quad();
+	PopMatrix();
 }
 
-void drawStars(float fXOffset, float* pCamY)
+void cDraw::Stars(float fXOffset, float* pCamY)
 {
 	int iCount = 0;
 	int shipPos = (int)*pCamY + SCR_HEIGHT;
-	drawTextureUnbind();
-	drawColor3f(1.0f, 1.0f, 1.0f);
+	TextureUnbind();
+	Color3f(1.0f, 1.0f, 1.0f);
 
 	for (int i = 0; i < STAR_NUM; i+=2)
 	{
@@ -266,15 +266,15 @@ void drawStars(float fXOffset, float* pCamY)
 		else if (shipPos <= (-cStarOffsets[i+1]+SCR_HEIGHT))
 		{
 			glPointSize(cBoostXOffsets[iCount++] * 0.01f);
-			drawPushMatrix();
-			drawTransformPoint(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1]);
-			drawPoint();
-			drawPopMatrix();
+			PushMatrix();
+			TransformPoint(cStarOffsets[i] + fXOffset, -cStarOffsets[i+1]);
+			Point();
+			PopMatrix();
 		}
 	}
 }
 
-void drawFree()
+void cDraw::Free()
 {
 	if (pWindow != NULL)
 	{
@@ -284,7 +284,7 @@ void drawFree()
 	glfwTerminate();
 }
 
-GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH)
+GLuint cDraw::TextureInit(const unsigned char* pBuffer, int iW, int iH)
 {
 	GLuint uiTID;
 	glGenTextures(1, &uiTID);
@@ -295,17 +295,17 @@ GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH)
 	return uiTID;
 }
 
-void drawTextureBind(GLuint uiTID)
+void cDraw::TextureBind(GLuint uiTID)
 {
 	glBindTexture(GL_TEXTURE_2D, uiTID);
 }
 
-void drawTextureUnbind()
+void cDraw::TextureUnbind()
 {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void drawTextureFree(GLuint uiTID)
+void cDraw::TextureFree(GLuint uiTID)
 {
 	glDeleteTextures(1, &uiTID);
 }

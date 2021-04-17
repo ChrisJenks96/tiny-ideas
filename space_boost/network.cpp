@@ -20,23 +20,8 @@ DATA_PACKET_GLOBAL globalData;
 //the data we get from the client
 DATA_PACKET myData;
 
-bool clientInit()
+void cClient::GetNewID()
 {
-	/* create an Internet, datagram, socket using UDP */
-	iSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (iSock == -1) 
-	{
-		iClientState = CLIENT_STATE_INIT_FAILED;
-	    return false;
-	}
-
-	iClientState = CLIENT_STATE_INIT_SUCCESS;
-	return true;
-}
-
-void* clientGetNewID()
-{
-	pthread_mutex_lock(&mutex1);
 	//if the host cannot be contacted in 5 seconds, then abort and presume the ip provided is crap...
 	struct timeval timeout;
 	timeout.tv_sec = 5;
@@ -67,12 +52,23 @@ void* clientGetNewID()
 			iClientState = CLIENT_STATE_NEW_ID;
 		}
 	}
-
-	pthread_mutex_unlock(&mutex1);
-	return NULL;
 }
 
-bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
+bool cClient::Init()
+{
+	/* create an Internet, datagram, socket using UDP */
+	iSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (iSock == -1) 
+	{
+		iClientState = CLIENT_STATE_INIT_FAILED;
+	    return false;
+	}
+
+	iClientState = CLIENT_STATE_INIT_SUCCESS;
+	return true;
+}
+
+bool cClient::Connect(char* pIP, unsigned short sPort, int iMSDelay)
 {
 	if (iIPTextLength == 0)
 	{
@@ -123,47 +119,13 @@ bool clientConnect(char* pIP, unsigned short sPort, int iMSDelay)
 	return true;
 }
 
-void* clientUpdate()
-{
-	while (iClientState == CLIENT_STATE_IN_GAME)
-	{
-		pthread_mutex_lock(&mutex1);
-		
-		//send our data to the server for updating
-		myData.fPos[0] = fClientPos[0];
-		myData.fPos[1] = fClientPos[1];
-		int iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
-		if (iBytesSent > 0)
-		{
-
-		}
-		
-		struct timeval timeout;
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-		//receive data back from the server
-		int iRecSize = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
-		if (iRecSize == -1 || !globalData.data[iServerID].bConnected)
-		{
-			//change the state to force the client to stop seeking packets from server
-			iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
-			bClientConnectedToHost = false;
-		}
-
-		pthread_mutex_unlock(&mutex1);
-	}
-
-	return NULL;
-}
-
-void clientIPFree()
+void cClient::IPFree()
 {
 	memset(&cIPAddrText, 0, IP_MAX_TEXT);
 	iIPTextLength = 0;
 }
 
-void clientDestroy()
+void cClient::Free()
 {
 	bClientInit = false;
 	close(iSock);

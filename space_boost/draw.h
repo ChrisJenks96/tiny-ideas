@@ -7,28 +7,30 @@ extern bool bQuit;
 extern bool bKeys[256];
 extern char cLastKey;
 
-//init all main systems and gl
-bool drawInit();
-//clear colour and color bit buffer
-void drawClear(float fR, float fG, float fB, float fCamY);
-void drawSwapBuffers();
-void drawPushMatrix();
-void drawPopMatrix();
-void drawTransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal);
-void drawTransformPoint(float fX, float fY);
-void drawQuad();
-void drawColor3f(float fR, float fG, float fB);
-void drawBox(float fX, float fY, float fX2, float fY2, float fThick);
-void drawLine(float fX, float fY, float fX2, float fY2, double fThick);
-void drawQuadSection(float fX, float fY, float fWidth, float fHeight,
-	float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
-void drawText(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre);
-void drawThrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed);
-void drawStars(float fXOffset, float* pCamY);
-void drawPoint();
-//unload all main systems
-void drawFree();
-GLuint drawTextureInit(const unsigned char* pBuffer, int iW, int iH);
-void drawTextureBind(GLuint uiTID);
-void drawTextureUnbind();
-void drawTextureFree(GLuint uiTID);
+class cDraw
+{
+	public:
+		bool Init();
+		void Clear(float fR, float fG, float fB, float fCamY);
+		void SwapBuffers();
+		void PushMatrix();
+		void PopMatrix();
+		void TransformQuad(float fX, float fY, float fX2, float fY2, float* fRotVal);
+		void TransformPoint(float fX, float fY);
+		void Quad();
+		void Color3f(float fR, float fG, float fB);
+		void Box(float fX, float fY, float fX2, float fY2, float fThick);
+		void Line(float fX, float fY, float fX2, float fY2, double fThick);
+		void QuadSection(float fX, float fY, float fWidth, float fHeight,
+		float fX2, float fY2, float fTCX, float fTCY, float fTCX2, float fTCY2);
+		void Text(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre);
+		void Thrust(float fX, float fY, float* fThrustY, float fLength, float fSize, float fSpeed);
+		void Stars(float fXOffset, float* pCamY);
+		void Point();
+		GLuint TextureInit(const unsigned char* pBuffer, int iW, int iH);
+		void TextureBind(GLuint uiTID);
+		void TextureUnbind();
+		void TextureFree(GLuint uiTID);
+		void Free();
+	private:
+};

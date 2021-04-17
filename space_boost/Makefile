@@ -10,7 +10,7 @@
 	#mesa-common-dev
 	#libglfw3-dev
 
-CC = gcc
+CC = g++
 
 CFLAGS = -Wall -g
 
@@ -20,7 +20,7 @@ LFLAGS =
 
 LIBS = -lglfw -lGL -lm -lpthread
 
-SRCS = main.c draw.c object.c global.c network.c
+SRCS = main.cpp draw.cpp object.cpp global.cpp network.cpp game.cpp
 
 OBJS = $(SRCS:.c=.o)
 
