@@ -2,8 +2,6 @@
 
 #include "global.h"
 
-extern GLFWwindow* pWindow;
-extern bool bQuit;
 extern bool bKeys[256];
 extern char cLastKey;
 
@@ -32,5 +30,10 @@ class cDraw
 		void TextureUnbind();
 		void TextureFree(GLuint uiTID);
 		void Free();
+		void SetQuit(bool bQ){mQuit=bQ;}
+		bool& IsQuit(){return mQuit;}
+		GLFWwindow* GetWindow(){return mWindow;}
 	private:
+		GLFWwindow* mWindow;
+		bool mQuit;
 };

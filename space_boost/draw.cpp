@@ -1,7 +1,5 @@
 #include "draw.h"
 
-GLFWwindow* pWindow = 0;
-bool bQuit = true;
 bool bKeys[256];
 char cLastKey = -1;
 
@@ -34,7 +32,7 @@ static void errorCallback(int error, const char* description)
 
 bool cDraw::Init()
 {
-	bQuit = false;
+	mQuit = false;
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	if (!glfwInit())
@@ -44,17 +42,17 @@ bool cDraw::Init()
 	
 	glfwSetErrorCallback(errorCallback);
 
-	pWindow = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Space Boost", NULL, NULL);
-	if (!pWindow)
+	mWindow = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Space Boost", NULL, NULL);
+	if (!mWindow)
 	{
 		glfwTerminate();
 		return false;
 	}
 
-	glfwSetKeyCallback(pWindow, keyCallback);
-	glfwSetFramebufferSizeCallback(pWindow, framebufferSizeCallback);
+	glfwSetKeyCallback(mWindow, keyCallback);
+	glfwSetFramebufferSizeCallback(mWindow, framebufferSizeCallback);
 
-	glfwMakeContextCurrent(pWindow);
+	glfwMakeContextCurrent(mWindow);
 	glfwSwapInterval(0);
 
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
@@ -78,7 +76,7 @@ void cDraw::Clear(float fR, float fG, float fB, float fCamY)
 
 void cDraw::SwapBuffers()
 {
-	glfwSwapBuffers(pWindow);
+	glfwSwapBuffers(mWindow);
 	glfwPollEvents();
 }
 
@@ -276,9 +274,9 @@ void cDraw::Stars(float fXOffset, float* pCamY)
 
 void cDraw::Free()
 {
-	if (pWindow != NULL)
+	if (mWindow != NULL)
 	{
-		glfwDestroyWindow(pWindow);
+		glfwDestroyWindow(mWindow);
 	}
 	
 	glfwTerminate();

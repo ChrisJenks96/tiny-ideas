@@ -2,8 +2,6 @@
 
 #include "global.h"
 
-extern float hitExpiryTimer;
-
 class cMoveable
 {
 	public:
@@ -38,4 +36,5 @@ class cMainShip : public cMoveable
 		float mFuelRemaining;
 		bool mHitObject;
 		bool mThrottle;
+		float mHitExpiryTimer;
 };

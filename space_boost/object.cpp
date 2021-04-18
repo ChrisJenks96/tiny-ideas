@@ -1,7 +1,5 @@
 #include "object.h"
 
-float hitExpiryTimer = 0.0f;
-
 void cMoveable::Create(int iSize, float fX, float fY, float fSpeed, float fMaxVal)
 {
 	mSize = iSize;
@@ -39,6 +37,7 @@ void cMainShip::Create()
 {
 	cMoveable::Create(SHIP_SIZE, HALF_SCR_WIDTH - SHIP_SIZE, 
 		SCR_HEIGHT - SHIP_SIZE, 4.0f, 30.0f);
+	mHitExpiryTimer = 0.0f;
 	mFuelRemaining = FUEL_START_VALUE;
 	mHitObject = false;
 }
@@ -123,11 +122,11 @@ void cMainShip::Update(bool* pKeys, float fDt)
 	//make sure to take the boost hit object collision off
 	if (mHitObject)
 	{
-		hitExpiryTimer += 1.0f * fDt;
-		if (hitExpiryTimer > BOOST_REACTIVATION_WAIT_TIME)
+		mHitExpiryTimer += 1.0f * fDt;
+		if (mHitExpiryTimer > BOOST_REACTIVATION_WAIT_TIME)
 		{
 			mHitObject = false;
-			hitExpiryTimer = 0.0f;
+			mHitExpiryTimer = 0.0f;
 		}
 	}
 

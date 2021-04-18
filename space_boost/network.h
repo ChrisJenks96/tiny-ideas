@@ -13,6 +13,8 @@
 #include "global.h"
 #include <pthread.h>
 
+#include "object.h"
+
 typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
@@ -25,31 +27,6 @@ typedef struct DATA_PACKET_GLOBAL
 	int iStatus; //the id of this specific client so we don't have to index ourselves the data below
 	DATA_PACKET data[SERVER_MAX_CLIENTS];
 } DATA_PACKET_GLOBAL;
-
-//client vars
-extern int iSock;
-extern struct sockaddr_in sa;
-extern socklen_t fromlen;
-extern int iBytesSent;
-extern char cBuffer[256];
-extern int iClientState;
-extern bool bClientConnectedToHost;
-extern bool bClientInit;
-extern float fClientTimer;
-extern int iIPTextLength;
-extern pthread_t thread1;
-extern pthread_mutex_t mutex1;
-
-//we're just going to sent all the data from each client over the network
-extern DATA_PACKET_GLOBAL globalData;
-//the data we get from the client
-extern DATA_PACKET myData;
-
-extern int iServerID;
-
-extern float fClientPos[2];
-
-static char cIPAddrText[IP_MAX_TEXT];
 
 #define CLIENT_STATE_NULL -1
 #define CLIENT_STATE_INIT_FAILED 0
@@ -64,44 +41,47 @@ static char cIPAddrText[IP_MAX_TEXT];
 class cClient
 {
 	public:
+		cClient()
+		{
+			mClientTimer = 0.0f;
+			mServerID = -1;
+			mClientInit = false;
+			mClientState = CLIENT_STATE_NULL;
+		}
+		
 		bool Init();
-		bool Connect(char* pIP, unsigned short sPort, int iMSDelay);
+		bool Connect(unsigned short sPort, int iMSDelay);
 		void Free();
 		void IPFree();
-		void GetNewID();
+		bool GetNewID();
+		void CreateUpdateThread(cMainShip& rShip);
+		void Disconnect();
+		void Update();
+		void UpdateIPAddrText(char cKey);
+		char* GetIPAddrText(){return mIPAddrText;}
+		int& GetIPAddrTextLength(){return mIPTextLength;}
+		void SetClientPos(float fX, float fY){mClientPos[0] = fX; mClientPos[1] = fY;}
+		int& GetServerID(){return mServerID;}
+		DATA_PACKET_GLOBAL& GetGlobalData(){return mGlobalData;}
+		DATA_PACKET& GetData(){return mData;}
+		bool& GetConnectedToHost(){return mClientConnectedToHost;}
+		int& GetClientState(){return mClientState;}
 	private:
+		int mSock;
+		struct sockaddr_in mSa;
+		socklen_t mFromlen;
+		int mClientState;
+		bool mClientConnectedToHost;
+		bool mClientInit;
+		float mClientTimer;
+		int mIPTextLength;
+		pthread_t mThread1;
+		pthread_mutex_t mMutex1;
+		//we're just going to sent all the data from each client over the network
+		DATA_PACKET_GLOBAL mGlobalData;
+		//the data we get from the client
+		DATA_PACKET mData;
+		int mServerID;
+		float mClientPos[2];
+		char mIPAddrText[IP_MAX_TEXT];
 };
-
-static void* cClient_Update(void* args)
-{
-	while (iClientState == CLIENT_STATE_IN_GAME)
-	{
-		pthread_mutex_lock(&mutex1);
-		
-		//send our data to the server for updating
-		myData.fPos[0] = fClientPos[0];
-		myData.fPos[1] = fClientPos[1];
-		int iBytesSent = sendto(iSock, &myData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&sa, sizeof(sa));
-		if (iBytesSent > 0)
-		{
-
-		}
-		
-		struct timeval timeout;
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-		setsockopt(iSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-		//receive data back from the server
-		int iRecSize = recvfrom(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&sa, &fromlen);
-		if (iRecSize == -1 || !globalData.data[iServerID].bConnected)
-		{
-			//change the state to force the client to stop seeking packets from server
-			iClientState = CLIENT_STATE_CONNECTING_SUCCESS;
-			bClientConnectedToHost = false;
-		}
-
-		pthread_mutex_unlock(&mutex1);
-	}
-
-	return NULL;
-}

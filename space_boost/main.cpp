@@ -16,31 +16,20 @@ cGame Game;
 cClient Client;
 cMainShip Ship1;
 
-float fBoostRotation;
-//for the glRotatef function
-float fRotationArr[4];
-
-int iBoostStartID;
-int iBoostEndID;
-
-float fThrustSmoke[SMOKE_PARTICLES];
-
 //some variables should only be init'd when loading the first time
-bool gameFirstTimeUse = true;
+bool bGameFirstTimeUse = true;
 int iMenuOptions = 0;
-
-GLuint uiT[MAX_TEXTURES];
 
 //everything to be initialised when entering the main menu state
 static void menuInit()
 {
-	iIPTextLength = 0;
+	Client.IPFree();
 }
 
 //everything to be initialised when entering the game state
-static void gameInit()
+static void gameInit(GLuint* pTextures, float& rBoostRotation, int& rBoostStartID, int& rBoostEndID, float* pRotationArr)
 {
-	if (gameFirstTimeUse)
+	if (bGameFirstTimeUse)
 	{
 		Ship1.Create();
 
@@ -48,17 +37,12 @@ static void gameInit()
 		Game.SaveOrLoad(false);
 
 		//load statically held textures
-		uiT[0] = Draw.TextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
-		uiT[1] = Draw.TextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
-		uiT[3] = Draw.TextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
-		uiT[4] = Draw.TextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
+		pTextures[0] = Draw.TextureInit(ship_bmp, SHIP_SIZE, SHIP_SIZE);
+		pTextures[1] = Draw.TextureInit(fuelbar_bmp, FUELBAR_SIZE_X, FUELBAR_SIZE_Y);
+		pTextures[3] = Draw.TextureInit(boost_bmp, BOOST_SIZE, BOOST_SIZE);
+		pTextures[4] = Draw.TextureInit(smoke_bmp, SMOKE_SIZE, SMOKE_SIZE);
 
-		for (int i = 0; i < SMOKE_PARTICLES; i++)
-		{
-			fThrustSmoke[i] = (SMOKE_SPRITE_SIZE * 0.4f) * i;
-		}
-
-		gameFirstTimeUse = false;
+		bGameFirstTimeUse = false;
 	}
 
 	else
@@ -71,14 +55,12 @@ static void gameInit()
 
 	Ship1.Reset();
 
-	fBoostRotation = 0.0f;
-	fRotationArr[0] = 0.0f;
-	fRotationArr[1] = 0.0f;
-	fRotationArr[2] = 0.0f;
-	fRotationArr[3] = 1.0f;
+	rBoostRotation = 0.0f;
+	memset(&pRotationArr[0], 0, sizeof(float) * 3);
+	pRotationArr[3] = 1.0f;
 	
-	iBoostStartID = 0;
-	iBoostEndID = 0;
+	rBoostStartID = 0;
+	rBoostEndID = 0;
 }
 
 int main(int argc, char** argv)
@@ -90,23 +72,24 @@ int main(int argc, char** argv)
 	}
 
 	//start the game out in the menu state
-	int state = STATE_MENU;
+	int iState = STATE_MENU;
 
-	//load the font regardless of initial state
-	uiT[2] = Draw.TextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
-
-	if (state == STATE_MENU)
-	{
-		menuInit();
-	}
-
-	else if (state == STATE_GAME)
-	{
-		gameInit();
-	}
-
+	GLuint uiT[MAX_TEXTURES];
 	//shorthand vars to store the ships pos
 	float fShipX(0.0f), fShipY(0.0f);
+
+	float fBoostRotation = 0.0f;
+	//for the glRotatef function
+	float fRotationArr[4];
+	//masking out the boost sprites
+	int iBoostStartID;
+	int iBoostEndID;
+
+	float fThrustSmoke[SMOKE_PARTICLES] = {
+		0.0f, (SMOKE_SPRITE_SIZE * 0.4f), 
+		(SMOKE_SPRITE_SIZE * 0.8f), 
+		(SMOKE_SPRITE_SIZE * 1.2f)
+	};
 
 	//text for printing out different information
 	char cFontAltitudeText[ALTITUDE_TEXT_SIZE];
@@ -114,7 +97,20 @@ int main(int argc, char** argv)
 	char cGameTimerText[GAME_TIMER_TEXT_SIZE];
 	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -Game.GetTime().mSeconds);
 
-	while (!bQuit)
+	//load the font regardless of initial state
+	uiT[2] = Draw.TextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
+
+	if (iState == STATE_MENU)
+	{
+		menuInit();
+	}
+
+	else if (iState == STATE_GAME)
+	{
+		gameInit(uiT, fBoostRotation, iBoostStartID, iBoostEndID, fRotationArr);
+	}
+
+	while (!Draw.IsQuit())
 	{
 		Game.GetFrameTime().mNowTime = glfwGetTime();
 		Game.GetFrameTime().mDeltaTime = (Game.GetFrameTime().mNowTime - 
@@ -122,12 +118,12 @@ int main(int argc, char** argv)
 
 		//updates
 
-		if ((Game.GetFrameTime().mNowTime - Game.GetFrameTime().mLastTime) >= TARGET_FPS)
+		if (Game.GetFrameTime().mDeltaTime >= TARGET_FPS)
 		{
-			if (state == STATE_MENU)
+			if (iState == STATE_MENU)
 			{
 				//quit if the escape button is pressed or the window close event is triggered
-				bQuit = glfwWindowShouldClose(pWindow) | (cLastKey == 0);
+				Draw.SetQuit(glfwWindowShouldClose(Draw.GetWindow()) | (cLastKey == 0));
 
 				//press enter and proceed to the game
 				if (cLastKey == 1)
@@ -135,49 +131,28 @@ int main(int argc, char** argv)
 					if (iMenuOptions == 0)
 					{
 						//init the game assets
-						gameInit();
-						state = STATE_GAME;
+						gameInit(uiT, fBoostRotation, iBoostStartID, iBoostEndID, fRotationArr);
+						iState = STATE_GAME;
 					}
 
 					else if (iMenuOptions == 1)
 					{
-						bClientConnectedToHost = true;
-						//create a client
-						if (!bClientInit)
-						{
-							bClientConnectedToHost = Client.Init();
-							if (iClientState == CLIENT_STATE_INIT_SUCCESS)
-							{
-								pthread_mutex_init(&mutex1, NULL);
-								bClientInit = true;
-							}
-						}
-
-						if (bClientConnectedToHost)
+						//create a client, wont re-create if the client init flag is on
+						Client.Init();
+					
+						if (Client.GetConnectedToHost())
 						{
 							//if the client cannot connect and we've picked to do multiplayer,
 							//reset out state back to menu
-							bClientConnectedToHost = Client.Connect(cIPAddrText, 7654, 5000);
+							Client.Connect(7654, 5000);
 							Client.IPFree();
-
-							//get a set id from the server
-							if (iClientState == CLIENT_STATE_CONNECTING)
+							//tell the server everything is good on client end and we're connecting
+							//this is set to false on client end if we disconnect
+							if (Client.GetNewID())
 							{
-								//tell the server everything is good on client end and we're connecting
-								//this is set to false on client end if we disconnect
-								myData.bConnected = true;
-								Client.GetNewID();
-								if (iClientState == CLIENT_STATE_NEW_ID)
-								{
-									//init the game assets
-									gameInit();
-									state = STATE_GAME;
-								}
-
-								else
-								{
-									bClientConnectedToHost = false;
-								}
+								//init the game assets
+								gameInit(uiT, fBoostRotation, iBoostStartID, iBoostEndID, fRotationArr);
+								iState = STATE_GAME;
 							}
 						}				
 					}
@@ -206,80 +181,38 @@ int main(int argc, char** argv)
 				//only show the ip box if you have selected multiplayer
 				else if (iMenuOptions == 1 && ((cLastKey >= 32 && cLastKey <= 122) || cLastKey == 3))
 				{
-					//backspace
-					if (cLastKey == 3)
-					{
-						iIPTextLength -= 1;
-						cIPAddrText[iIPTextLength] = 0;
-						if (iIPTextLength < 0)
-						{
-							iIPTextLength = 0;
-						}
-					}
-
-					else
-					{
-						cIPAddrText[iIPTextLength++] = cLastKey;
-						if (iIPTextLength > IP_MAX_TEXT)
-						{
-							iIPTextLength = IP_MAX_TEXT;
-						}
-					}
+					Client.UpdateIPAddrText(cLastKey);
 				}
 			}
 
-			else if (state == STATE_GAME)
+			else if (iState == STATE_GAME)
 			{
 				fShipX = std::get<0>(Ship1.GetXY());
 				fShipY = std::get<1>(Ship1.GetXY());
-
+				
 				if (cLastKey == 0)
 				{
-					state = STATE_MENU;
-
-					//disconnect from the server, kill the receiving thread
-					if (bClientConnectedToHost)
-					{
-						//send a packet that tells the server we're done
-						myData.bConnected = false;
-						//make main thread wait till the networking thread is done
-						pthread_join(thread1, NULL);
-					}
+					iState = STATE_MENU;
+					Client.Disconnect();
 				}
 
-				if (bClientConnectedToHost)
-				{ 
-					if (iClientState == CLIENT_STATE_NEW_ID)
+				if (Client.GetConnectedToHost())
+				{
+					if (Client.GetClientState() == CLIENT_STATE_NEW_ID)
 					{
-						//update the ships data
-						Ship1.SetXY(globalData.data[iServerID].fPos[0], 
-							globalData.data[iServerID].fPos[1]);
-
-						//setup the thread to run the send/rec from server
-						int iRet;
-						if ((iRet = pthread_create(&thread1, NULL, cClient_Update, NULL)))
-						{
-							printf("Thread creation failed!\n");
-							//kill the connection and go back to the menu
-						}
-
-						//update to the client being in the online game
-						iClientState = CLIENT_STATE_IN_GAME;
+						Client.CreateUpdateThread(Ship1);
 					}
 
-					else if (iClientState == CLIENT_STATE_SERVER_FULL)
+					else if (Client.GetClientState() == CLIENT_STATE_SERVER_FULL)
 					{
-						//kill the connection and go back to the menu
-						bClientConnectedToHost = false;
 						//revert back to the menu if the max capacity is limited
-						state = STATE_MENU;
+						iState = STATE_MENU;
 					}
 
-					else if (iClientState == CLIENT_STATE_IN_GAME)
+					else if (Client.GetClientState() == CLIENT_STATE_IN_GAME)
 					{
 						//update the client positions to send off to the server
-						fClientPos[0] = fShipX;
-						fClientPos[1] = fShipY;
+						Client.SetClientPos(fShipX, fShipY);
 					}
 				}
 
@@ -315,7 +248,7 @@ int main(int argc, char** argv)
 			
 			//rendering
 
-			if (state == STATE_MENU)
+			if (iState == STATE_MENU)
 			{
 				Draw.Clear(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -347,7 +280,7 @@ int main(int argc, char** argv)
 
 				if (iMenuOptions == 1)
 				{
-					switch (iClientState)
+					switch (Client.GetClientState())
 					{
 						case CLIENT_STATE_NULL:
 						Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER ADDRESS", 14, true);
@@ -375,13 +308,13 @@ int main(int argc, char** argv)
 						break; 
 					}
 					
-					Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, cIPAddrText, iIPTextLength, true);
+					Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, Client.GetIPAddrText(), Client.GetIPAddrTextLength(), true);
 					Draw.TextureUnbind();
 					Draw.Box(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
 				}
 			}
 
-			else if (state == STATE_GAME)
+			else if (iState == STATE_GAME)
 			{
 				Draw.Clear(0.33f * Game.GetBackgroundFadeFactor(), 
 					0.56f * Game.GetBackgroundFadeFactor(), 
@@ -410,16 +343,17 @@ int main(int argc, char** argv)
 				
 
 				//multiplayer thrusters
-				if (iClientState == CLIENT_STATE_IN_GAME)
+				DATA_PACKET_GLOBAL globPacketData = Client.GetGlobalData();
+				if (Client.GetClientState() == CLIENT_STATE_IN_GAME)
 				{
 					for (int j = 0; j < SERVER_MAX_CLIENTS; j++)
 					{
-						if (globalData.data[j].cId != iServerID && globalData.data[j].bConnected)
+						if (globPacketData.data[j].cId != Client.GetServerID() && globPacketData.data[j].bConnected)
 						{
 							for (int i = SMOKE_PARTICLES; i >= 0; --i)
 							{
-								Draw.Thrust(globalData.data[j].fPos[0] - 2.0f, globalData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
-								Draw.Thrust(globalData.data[j].fPos[0] + 20.0f, globalData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
+								Draw.Thrust(globPacketData.data[j].fPos[0] - 2.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
+								Draw.Thrust(globPacketData.data[j].fPos[0] + 20.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
 							}
 						}
 					}
@@ -453,14 +387,15 @@ int main(int argc, char** argv)
 				Draw.PopMatrix();
 
 				//if its multiplayer, then draw the other clients excluding us
-				if (iClientState == CLIENT_STATE_IN_GAME)
+				if (Client.GetClientState() == CLIENT_STATE_IN_GAME)
 				{
 					for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
 					{
-						if (globalData.data[i].cId != iServerID && globalData.data[i].bConnected)
+						if (globPacketData.data[i].cId != Client.GetServerID() && 
+							globPacketData.data[i].bConnected)
 						{
 							Draw.PushMatrix();
-							Draw.TransformQuad(globalData.data[i].fPos[0], globalData.data[i].fPos[1], 
+							Draw.TransformQuad(globPacketData.data[i].fPos[0], globPacketData.data[i].fPos[1], 
 								SHIP_SIZE, SHIP_SIZE, fRotationArr);
 							Draw.Quad();
 							Draw.PopMatrix();
@@ -490,8 +425,6 @@ int main(int argc, char** argv)
 			Game.GetFrameTime().mLastTime = Game.GetFrameTime().mNowTime;
 		}
 	}
-
-	pthread_mutex_destroy(&mutex1);
 
 	Draw.TextureFree(uiT[0]);
 	Draw.TextureFree(uiT[1]);

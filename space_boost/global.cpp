@@ -36,8 +36,6 @@ uint8_t cBoostXOffsets[BOOST_NUM] =
     69, 92, 120, 135, 198, 222, 238, 229
 };
 
-#define STAR_NUM 40
-
 uint16_t cStarOffsets[STAR_NUM] = 
 {
     4, 34, 94, 37, 111, 475, 298, 294,
