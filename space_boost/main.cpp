@@ -213,6 +213,9 @@ int main(int argc, char** argv)
 					{
 						//update the client positions to send off to the server
 						Client.SetClientPos(fShipX, fShipY);
+
+						//Update the direction of the ship used (for thrust visual)
+						Client.SetDataShipDirection(bKeys[GLFW_KEY_W], bKeys[GLFW_KEY_A], bKeys[GLFW_KEY_D]);
 					}
 				}
 
@@ -343,17 +346,28 @@ int main(int argc, char** argv)
 				
 
 				//multiplayer thrusters
-				DATA_PACKET_GLOBAL globPacketData = Client.GetGlobalData();
+				DATA_PACKET_GLOBAL& globPacketData = Client.GetGlobalData();
 				if (Client.GetClientState() == CLIENT_STATE_IN_GAME)
 				{
 					for (int j = 0; j < SERVER_MAX_CLIENTS; j++)
 					{
 						if (globPacketData.data[j].cId != Client.GetServerID() && globPacketData.data[j].bConnected)
 						{
-							for (int i = SMOKE_PARTICLES; i >= 0; --i)
+							//throttle
+							if (globPacketData.data[j].bPressUp)
 							{
-								Draw.Thrust(globPacketData.data[j].fPos[0] - 2.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
-								Draw.Thrust(globPacketData.data[j].fPos[0] + 20.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
+								for (int i = SMOKE_PARTICLES; i >= 0; --i)
+								{
+									if (!globPacketData.data[j].bPressLeft)
+									{
+										Draw.Thrust(globPacketData.data[j].fPos[0] - 2.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
+									}
+
+									if (!globPacketData.data[j].bPressRight)
+									{
+										Draw.Thrust(globPacketData.data[j].fPos[0] + 20.0f, globPacketData.data[j].fPos[1] + 25.0f, &fThrustSmoke[i], THRUST_LENGTH, SMOKE_SPRITE_SIZE, 10.0f * Game.GetFrameTime().mDeltaTime);
+									}
+								}
 							}
 						}
 					}

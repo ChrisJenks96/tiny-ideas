@@ -25,6 +25,9 @@ typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
 	float fPos[2]; //x&y
+	bool bPressUp;
+	bool bPressLeft;
+	bool bPressRight;
 	bool bConnected; //whether we are connected to the server or not
 } DATA_PACKET;
 
@@ -152,6 +155,9 @@ int main(void)
 				{
 					globalData.data[data.cId].fPos[0] = data.fPos[0];
 					globalData.data[data.cId].fPos[1] = data.fPos[1];
+					globalData.data[data.cId].bPressLeft = data.bPressLeft;
+					globalData.data[data.cId].bPressRight = data.bPressRight;
+					globalData.data[data.cId].bPressUp = data.bPressUp;
 				}
 			}
 
@@ -164,8 +170,9 @@ int main(void)
 					if (globalData.data[i].bConnected)
 					{
 						sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
-						printf("%i %f %f\n", globalData.data[i].cId,
-							globalData.data[i].fPos[0], globalData.data[i].fPos[1]);
+						printf("%i %f %f %i %i %i\n", globalData.data[i].cId,
+							globalData.data[i].fPos[0], globalData.data[i].fPos[1],
+							globalData.data[i].bPressLeft, globalData.data[i].bPressRight, globalData.data[i].bPressUp);
 					}
 				}
 

@@ -19,6 +19,9 @@ typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
 	float fPos[2]; //x&y
+	bool bPressUp;
+	bool bPressLeft;
+	bool bPressRight;
 	bool bConnected; //whether we are connected to the server or not
 } DATA_PACKET;
 
@@ -64,6 +67,7 @@ class cClient
 		int& GetServerID(){return mServerID;}
 		DATA_PACKET_GLOBAL& GetGlobalData(){return mGlobalData;}
 		DATA_PACKET& GetData(){return mData;}
+		void SetDataShipDirection(bool bUp, bool bLeft, bool bRight);
 		bool& GetConnectedToHost(){return mClientConnectedToHost;}
 		int& GetClientState(){return mClientState;}
 	private:

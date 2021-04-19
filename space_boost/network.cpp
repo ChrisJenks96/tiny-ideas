@@ -152,14 +152,21 @@ bool cClient::Connect(unsigned short sPort, int iMSDelay)
 static void* UpdateThreadInvoke(void* args)
 {
 	((cClient*)args)->Update();
-	return NULL;
+	pthread_exit(NULL);
+}
+
+void cClient::SetDataShipDirection(bool bUp, bool bLeft, bool bRight)
+{
+	mData.bPressLeft = bLeft;
+	mData.bPressRight = bRight;
+	mData.bPressUp = bUp;
 }
 
 void cClient::Update()
 {
 	while (mClientState == CLIENT_STATE_IN_GAME)
 	{
-		pthread_mutex_lock(&mMutex1);
+		//pthread_mutex_lock(&mMutex1);
 		
 		//send our data to the server for updating
 		mData.fPos[0] = mClientPos[0];
@@ -183,7 +190,7 @@ void cClient::Update()
 			mClientConnectedToHost = false;
 		}
 
-		pthread_mutex_unlock(&mMutex1);
+		//pthread_mutex_unlock(&mMutex1);
 	}
 }
 
