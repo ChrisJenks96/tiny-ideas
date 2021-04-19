@@ -25,6 +25,8 @@ typedef struct DATA_PACKET
 {
 	int8_t cId; //0-255 (server gives us an iden)
 	float fPos[2]; //x&y
+	bool bServerReady; //when all players have agreed to begin the game
+	bool bReadyToPlay; //each players will press 'space' to begin
 	bool bPressUp;
 	bool bPressLeft;
 	bool bPressRight;
@@ -158,17 +160,38 @@ int main(void)
 					globalData.data[data.cId].bPressLeft = data.bPressLeft;
 					globalData.data[data.cId].bPressRight = data.bPressRight;
 					globalData.data[data.cId].bPressUp = data.bPressUp;
+					globalData.data[data.cId].bReadyToPlay = data.bReadyToPlay;
 				}
 			}
 
 			//if we have some clients, we have to transmit the data across the network
 			if (iCurrentNumOfClients > 0)
 			{
+				//find out if all the players are ready to play
+				int iClientsReadyToPlay = 0;
+				for (int i = 0; i < MAX_CLIENTS; i++)
+				{
+					if (globalData.data[i].bReadyToPlay)
+					{
+						iClientsReadyToPlay++;
+					}
+				}
+
 				printf("Client number: %i\n", iCurrentNumOfClients);
+
 				for (int i = 0; i < MAX_CLIENTS; i++)
 				{
 					if (globalData.data[i].bConnected)
 					{
+						if (iClientsReadyToPlay == iCurrentNumOfClients)
+						{
+							//toggle the server being ready to let the clients play
+							if (!globalData.data[i].bServerReady)
+							{
+								globalData.data[i].bServerReady = true;
+							}
+						}
+
 						sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
 						printf("%i %f %f %i %i %i\n", globalData.data[i].cId,
 							globalData.data[i].fPos[0], globalData.data[i].fPos[1],

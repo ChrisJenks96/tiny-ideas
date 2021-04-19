@@ -23,6 +23,8 @@ int iMenuOptions = 0;
 //everything to be initialised when entering the main menu state
 static void menuInit()
 {
+	//frame time/time updates - not really game related
+	Game.Init();
 	Client.IPFree();
 }
 
@@ -50,8 +52,6 @@ static void gameInit(GLuint* pTextures, float& rBoostRotation, int& rBoostStartI
 		//save the highscore that the player has
 		Game.SaveOrLoad(true);
 	}
-
-	Game.Init();
 
 	Ship1.Reset();
 
@@ -95,7 +95,6 @@ int main(int argc, char** argv)
 	char cFontAltitudeText[ALTITUDE_TEXT_SIZE];
 	char cFontHSText[HIGH_SCORE_TEXT_SIZE];
 	char cGameTimerText[GAME_TIMER_TEXT_SIZE];
-	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -Game.GetTime().mSeconds);
 
 	//load the font regardless of initial state
 	uiT[2] = Draw.TextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
@@ -109,6 +108,8 @@ int main(int argc, char** argv)
 	{
 		gameInit(uiT, fBoostRotation, iBoostStartID, iBoostEndID, fRotationArr);
 	}
+
+	sprintf(&cGameTimerText[0], "TIME: -00:00:0%i", -Game.GetTime().mSeconds);
 
 	while (!Draw.IsQuit())
 	{
@@ -190,6 +191,7 @@ int main(int argc, char** argv)
 				fShipX = std::get<0>(Ship1.GetXY());
 				fShipY = std::get<1>(Ship1.GetXY());
 				
+				//escape
 				if (cLastKey == 0)
 				{
 					iState = STATE_MENU;
@@ -216,6 +218,12 @@ int main(int argc, char** argv)
 
 						//Update the direction of the ship used (for thrust visual)
 						Client.SetDataShipDirection(bKeys[GLFW_KEY_W], bKeys[GLFW_KEY_A], bKeys[GLFW_KEY_D]);
+					}
+
+					//spacebar
+					if (cLastKey == 32)
+					{
+						Client.SetClientReadyToPlay(true);
 					}
 				}
 
@@ -244,7 +252,10 @@ int main(int argc, char** argv)
 				sprintf(&cFontAltitudeText[0], "ALTITUDE: %i", Game.GetCurrentAltitude());
 				sprintf(&cFontHSText[0], "HIGH SCORE: %i", Game.GetCurrentHighScore());
 
-				Game.TimerUpdate(cGameTimerText);
+				if (iMenuOptions == 0 || (iMenuOptions == 1 && Client.GetServerReadyToLetUsPlay()))
+				{
+					Game.TimerUpdate(cGameTimerText);
+				}
 			}
 
 			cLastKey = -1;
@@ -434,7 +445,7 @@ int main(int argc, char** argv)
 				Draw.Text(10, 70 + Game.GetCamY(), 16, 9, cGameTimerText, strlen(cGameTimerText), false);
 			}
 
-			Game.ShowFPS();
+			//Game.ShowFPS();
 			Draw.SwapBuffers();
 			Game.GetFrameTime().mLastTime = Game.GetFrameTime().mNowTime;
 		}
