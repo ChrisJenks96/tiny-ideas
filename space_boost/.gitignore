@@ -1,4 +1,6 @@
 /spaceboost
+/.vscode
+/callgrind.out.*
 /*.o
 /*.bmp
 /*.bin
