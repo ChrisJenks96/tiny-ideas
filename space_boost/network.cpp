@@ -4,6 +4,9 @@ bool cClient::Init()
 {
 	if (!mClientInit)
 	{
+		//get the name of this machine for MP
+		GetClientNameFromSystem();
+
 		/* create an Internet, datagram, socket using UDP */
 		mSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (mSock == -1) 
@@ -19,6 +22,7 @@ bool cClient::Init()
 
 		mMutex1 = PTHREAD_MUTEX_INITIALIZER;
 		pthread_mutex_init(&mMutex1, NULL);
+		mThreadCount = 0;
 	}
 
 	else
@@ -28,6 +32,27 @@ bool cClient::Init()
 	}
 
 	return true;
+}
+
+void cClient::GetClientNameFromSystem()
+{
+	int err = gethostname(mClientName, 32);
+	//if the gethostname function returned an error, lets reset the client name
+	if (err == EFAULT || err == EINVAL || err == ENAMETOOLONG || err == EPERM)
+	{
+		strncpy(&mClientName[0], "ERROR", 6);
+	}
+
+	mClientNameLength = strlen(mClientName);
+
+	//convert to uppercase for our inbuilt font
+	for (int i = 0; i < mClientNameLength; i++)
+	{
+		Utility::ToUpper(mClientName[i]);
+	}
+
+	//update the data packet we send to the server
+	strncpy(mData.cName, mClientName, 32);
 }
 
 void cClient::UpdateIPAddrText(char cKey)
@@ -151,8 +176,15 @@ bool cClient::Connect(unsigned short sPort, int iMSDelay)
 
 static void* UpdateThreadInvoke(void* args)
 {
-	((cClient*)args)->Update();
-	pthread_exit(NULL);
+	if (args != NULL)
+	{
+		((cClient*)args)->Update();
+	}
+
+	//pthread_exit(NULL);
+
+	//return instead of pthread_exit will supress the valgrind memory leaks
+	return NULL;
 }
 
 void cClient::SetDataShipDirection(bool bUp, bool bLeft, bool bRight)
@@ -162,15 +194,26 @@ void cClient::SetDataShipDirection(bool bUp, bool bLeft, bool bRight)
 	mData.bPressUp = bUp;
 }
 
+void cClient::SetClientPos(float fX, float fY)
+{
+	//mutex lock main for writing to the mClientPos values
+	pthread_mutex_lock(&mMutex1);
+	mClientPos[0] = fX; 
+	mClientPos[1] = fY;
+	pthread_mutex_unlock(&mMutex1);
+}
+
 void cClient::Update()
 {
 	while (mClientState == CLIENT_STATE_IN_GAME)
 	{
-		//pthread_mutex_lock(&mMutex1);
-		
+		//mutex lock thread for reading from the mClientPos values
+		pthread_mutex_lock(&mMutex1);
 		//send our data to the server for updating
 		mData.fPos[0] = mClientPos[0];
 		mData.fPos[1] = mClientPos[1];
+		pthread_mutex_unlock(&mMutex1);
+
 		int iBytesSent = sendto(mSock, &mData, sizeof(DATA_PACKET), 0, (struct sockaddr*)&mSa, sizeof(mSa));
 		if (iBytesSent > 0)
 		{
@@ -189,8 +232,6 @@ void cClient::Update()
 			mClientState = CLIENT_STATE_CONNECTING_SUCCESS;
 			mClientConnectedToHost = false;
 		}
-
-		//pthread_mutex_unlock(&mMutex1);
 	}
 }
 
@@ -202,10 +243,16 @@ void cClient::CreateUpdateThread(cMainShip& rShip)
 
 	//setup the thread to run the send/rec from server
 	int iRet;
-	if ((iRet = pthread_create(&mThread1, NULL, UpdateThreadInvoke, (void*)this)))
+	if ((iRet = pthread_create(&mThread1, NULL, &UpdateThreadInvoke, (void*)this)))
 	{
 		printf("Thread creation failed!\n");
 		//kill the connection and go back to the menu
+	}
+
+	else
+	{
+		//increase the thread count so we know we have an extra thread active
+		mThreadCount++;
 	}
 
 	//update to the client being in the online game
@@ -227,12 +274,21 @@ void cClient::Disconnect()
 		mData.bConnected = false;
 		//make main thread wait till the networking thread is done
 		pthread_join(mThread1, NULL);
+		//reduce the thread count so we know if we've destroyed the thread or not
+		mThreadCount--;
 	}
 }
 
 void cClient::Free()
 {
 	mClientInit = false;
+	mClientConnectedToHost = false;
+	//if thread is still running (quitting without invoking ::Disconnect), then finish up
+	if (mThreadCount > 0)
+	{
+		pthread_join(mThread1, NULL);
+	}
+	
 	pthread_mutex_destroy(&mMutex1);
 	close(mSock);
 }

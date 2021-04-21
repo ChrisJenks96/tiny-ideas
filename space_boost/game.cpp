@@ -80,6 +80,7 @@ bool cGame::SaveOrLoad(bool bSave)
 		if (saveExists)
 		{
 			pFile = fopen("GAME_SAVE.bin", "rb");
+			//03 compiler flags want fread to have a return type
 			fread(&mCurrentHighScore, sizeof(int), 1, pFile);
 			fclose(pFile);
 			return true;

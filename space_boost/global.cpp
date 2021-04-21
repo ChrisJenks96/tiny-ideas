@@ -45,3 +45,12 @@ uint16_t cStarOffsets[STAR_NUM] =
     600, 304, 532, 289, 580, 284, 284, 193
 };
 
+namespace Utility
+{
+    //convert character to upper if it needs to be or just leave it
+    void ToUpper(char& rChar)
+    {
+        rChar = (rChar >= 97 && rChar <= 122) ? (rChar-32) : rChar;
+    }
+};
+

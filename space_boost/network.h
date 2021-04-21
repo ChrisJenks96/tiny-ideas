@@ -25,6 +25,7 @@ typedef struct DATA_PACKET
 	bool bPressLeft;
 	bool bPressRight;
 	bool bConnected; //whether we are connected to the server or not
+	char cName[32];
 } DATA_PACKET;
 
 typedef struct DATA_PACKET_GLOBAL
@@ -52,6 +53,7 @@ class cClient
 			mServerID = -1;
 			mClientInit = false;
 			mClientState = CLIENT_STATE_NULL;
+			memset(&mClientName[0], 0, 32);
 		}
 		
 		bool Init();
@@ -65,7 +67,7 @@ class cClient
 		void UpdateIPAddrText(char cKey);
 		char* GetIPAddrText(){return mIPAddrText;}
 		int& GetIPAddrTextLength(){return mIPTextLength;}
-		void SetClientPos(float fX, float fY){mClientPos[0] = fX; mClientPos[1] = fY;}
+		void SetClientPos(float fX, float fY);
 		int& GetServerID(){return mServerID;}
 		DATA_PACKET_GLOBAL& GetGlobalData(){return mGlobalData;}
 		DATA_PACKET& GetData(){return mData;}
@@ -73,8 +75,14 @@ class cClient
 		bool& GetServerReadyToLetUsPlay(){return mGlobalData.data[mServerID].bServerReady;}
 		void SetDataShipDirection(bool bUp, bool bLeft, bool bRight);
 		bool& GetConnectedToHost(){return mClientConnectedToHost;}
+		const char* GetClientName(){return mClientName;}
+		int GetClientNameLength(){return mClientNameLength;} 
 		int& GetClientState(){return mClientState;}
 	private:
+		void GetClientNameFromSystem();
+		char mClientName[32];
+		int mClientNameLength;
+
 		int mSock;
 		struct sockaddr_in mSa;
 		socklen_t mFromlen;
@@ -83,6 +91,7 @@ class cClient
 		bool mClientInit;
 		float mClientTimer;
 		int mIPTextLength;
+		int mThreadCount;
 		pthread_t mThread1;
 		pthread_mutex_t mMutex1;
 		//we're just going to sent all the data from each client over the network

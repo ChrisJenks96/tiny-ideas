@@ -85,3 +85,8 @@ extern uint8_t cBoostXOffsets[BOOST_NUM];
 #define STAR_NUM 40
 
 extern uint16_t cStarOffsets[STAR_NUM];
+
+namespace Utility
+{
+    void ToUpper(char& rChar);
+};

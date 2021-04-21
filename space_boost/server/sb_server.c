@@ -31,6 +31,7 @@ typedef struct DATA_PACKET
 	bool bPressLeft;
 	bool bPressRight;
 	bool bConnected; //whether we are connected to the server or not
+	char cName[32];
 } DATA_PACKET;
 
 typedef struct DATA_PACKET_GLOBAL
@@ -146,9 +147,10 @@ int main(void)
 						//reset all the data for the client
 						memset(&globalData.data[data.cId], 0, sizeof(DATA_PACKET));
 						globalData.data[data.cId].cId = -1;
+						memset(&globalData.data[data.cId].cName, 0, 32);
 						//allocate a new slot for a possible new client
 						iCurrentNumOfClients--;
-						printf("CONNECTED %i\n", iCurrentNumOfClients);
+						printf("Connected: %i\n", iCurrentNumOfClients);
 					}	
 				}
 
@@ -161,6 +163,13 @@ int main(void)
 					globalData.data[data.cId].bPressRight = data.bPressRight;
 					globalData.data[data.cId].bPressUp = data.bPressUp;
 					globalData.data[data.cId].bReadyToPlay = data.bReadyToPlay;
+					
+					//update once, the client name will never change mid game
+					int clientNameLength = strlen(globalData.data[data.cId].cName);
+					if (clientNameLength == 0)
+					{
+						strncpy(globalData.data[data.cId].cName, data.cName, 32);
+					}
 				}
 			}
 
@@ -193,9 +202,11 @@ int main(void)
 						}
 
 						sendto(iSock, &globalData, sizeof(DATA_PACKET_GLOBAL), 0, (struct sockaddr*)&clients.addr[i], sizeof(sa));
-						printf("%i %f %f %i %i %i\n", globalData.data[i].cId,
+						printf("%i %f %f %i %i %i %s\n", 
+							globalData.data[i].cId,
 							globalData.data[i].fPos[0], globalData.data[i].fPos[1],
-							globalData.data[i].bPressLeft, globalData.data[i].bPressRight, globalData.data[i].bPressUp);
+							globalData.data[i].bPressLeft, globalData.data[i].bPressRight, globalData.data[i].bPressUp, 
+							globalData.data[i].cName);
 					}
 				}
 

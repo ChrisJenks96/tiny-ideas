@@ -202,6 +202,12 @@ void cDraw::QuadSection(float fX, float fY, float fWidth, float fHeight,
 
 void cDraw::Text(float fX, float fY, float fQuadSize, float fTextSepSize, const char* cStr, int iLen, bool bCentre)
 {
+	//if a length is submitted but the string is null, check the first elem to make sure
+	if (*cStr == 0)
+	{
+		return;
+	}
+
 	if (bCentre)
 	{
 		fX -= (fTextSepSize * iLen) / 2.0f;

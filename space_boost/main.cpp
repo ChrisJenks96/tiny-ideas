@@ -92,9 +92,10 @@ int main(int argc, char** argv)
 	};
 
 	//text for printing out different information
-	char cFontAltitudeText[ALTITUDE_TEXT_SIZE];
-	char cFontHSText[HIGH_SCORE_TEXT_SIZE];
-	char cGameTimerText[GAME_TIMER_TEXT_SIZE];
+	//valgrind likes it when we initialise the char arrays
+	char cFontAltitudeText[ALTITUDE_TEXT_SIZE] = {0};
+	char cFontHSText[HIGH_SCORE_TEXT_SIZE] = {0};
+	char cGameTimerText[GAME_TIMER_TEXT_SIZE] = {0};
 
 	//load the font regardless of initial state
 	uiT[2] = Draw.TextureInit(font_bmp, FONT_SIZE, FONT_SIZE);
@@ -321,7 +322,7 @@ int main(int argc, char** argv)
 						Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 120.0f, 16.0f, 9.0f, "SERVER IS FULL", 14, true);
 						break; 
 					}
-					
+
 					Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, Client.GetIPAddrText(), Client.GetIPAddrTextLength(), true);
 					Draw.TextureUnbind();
 					Draw.Box(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
@@ -335,7 +336,6 @@ int main(int argc, char** argv)
 					0.80f * Game.GetBackgroundFadeFactor(), Game.GetCamY());
 
 				Draw.Stars(0.0f, &Game.GetCamY());
-
 				Draw.TextureBind(uiT[4]);
 
 				//local thrusters
@@ -440,9 +440,26 @@ int main(int argc, char** argv)
 				}
 
 				Draw.TextureBind(uiT[2]);
-				Draw.Text(10, 30 + Game.GetCamY(), 16, 9, cFontAltitudeText, strlen(cFontAltitudeText), false);
-				Draw.Text(10, 50 + Game.GetCamY(), 16, 9, cFontHSText, strlen(cFontHSText), false);
-				Draw.Text(10, 70 + Game.GetCamY(), 16, 9, cGameTimerText, strlen(cGameTimerText), false);
+				Draw.Text(10, 30 + Game.GetCamY(), 16.0f, 9.0f, cFontAltitudeText, strlen(cFontAltitudeText), false);
+				Draw.Text(10, 50 + Game.GetCamY(), 16.0f, 9.0f, cFontHSText, strlen(cFontHSText), false);
+				Draw.Text(10, 70 + Game.GetCamY(), 16.0f, 9.0f, cGameTimerText, strlen(cGameTimerText), false);
+
+				float halfShipWidth = Ship1.GetSize() / 2;
+				Draw.Color3f(1.0f, 1.0f, 0.0f);
+				Draw.Text(fShipX + halfShipWidth, fShipY - 20.0f, 16.0f, 9.0f, Client.GetClientName(), Client.GetClientNameLength(), true);
+
+				if (Client.GetClientState() == CLIENT_STATE_IN_GAME)
+				{
+					for (int i = 0; i < SERVER_MAX_CLIENTS; i++)
+					{
+						if (globPacketData.data[i].cId != Client.GetServerID() && 
+							globPacketData.data[i].bConnected)
+						{
+							Draw.Text(globPacketData.data[i].fPos[0] + halfShipWidth, globPacketData.data[i].fPos[1] - 20.0f, 16.0f, 9.0f, 
+								Client.GetClientName(), Client.GetClientNameLength(), true);
+						}
+					}
+				}
 			}
 
 			//Game.ShowFPS();
