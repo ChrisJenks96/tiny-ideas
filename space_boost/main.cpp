@@ -9,6 +9,7 @@
 #include "font.h"
 #include "boost.h"
 #include "smoke.h"
+#include "logo.h"
 
 //global variables
 cDraw Draw;
@@ -21,11 +22,14 @@ bool bGameFirstTimeUse = true;
 int iMenuOptions = 0;
 
 //everything to be initialised when entering the main menu state
-static void menuInit()
+static void menuInit(GLuint* pTextures)
 {
 	//frame time/time updates - not really game related
 	Game.Init();
 	Client.IPFree();
+
+	//load in the logo for the main menu
+	pTextures[5] = Draw.TextureInit(logo_bmp, LOGO_SIZE, LOGO_SIZE);
 }
 
 //everything to be initialised when entering the game state
@@ -53,6 +57,7 @@ static void gameInit(GLuint* pTextures, float& rBoostRotation, int& rBoostStartI
 		Game.SaveOrLoad(true);
 	}
 
+	Game.Init();
 	Ship1.Reset();
 
 	rBoostRotation = 0.0f;
@@ -80,7 +85,7 @@ int main(int argc, char** argv)
 
 	float fBoostRotation = 0.0f;
 	//for the glRotatef function
-	float fRotationArr[4];
+	float fRotationArr[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 	//masking out the boost sprites
 	int iBoostStartID;
 	int iBoostEndID;
@@ -102,7 +107,7 @@ int main(int argc, char** argv)
 
 	if (iState == STATE_MENU)
 	{
-		menuInit();
+		menuInit(uiT);
 	}
 
 	else if (iState == STATE_GAME)
@@ -266,6 +271,15 @@ int main(int argc, char** argv)
 			if (iState == STATE_MENU)
 			{
 				Draw.Clear(0.0f, 0.0f, 0.0f, 0.0f);
+
+				//draw main menu logo
+				float fLogoQuadSize = LOGO_SIZE * 2;
+				float fHalfLogoSize = fLogoQuadSize / 2;
+				Draw.TextureBind(uiT[5]);
+				Draw.PushMatrix();
+				Draw.TransformQuad(HALF_SCR_WIDTH - fHalfLogoSize, (HALF_SCR_HEIGHT - fHalfLogoSize) - 100.0f, fLogoQuadSize, fLogoQuadSize, fRotationArr);
+				Draw.Quad();
+				Draw.PopMatrix();
 
 				Draw.TextureBind(uiT[2]);
 				if (iMenuOptions == 0)
@@ -473,6 +487,7 @@ int main(int argc, char** argv)
 	Draw.TextureFree(uiT[2]);
 	Draw.TextureFree(uiT[4]);
 	Draw.TextureFree(uiT[3]);
+	Draw.TextureFree(uiT[5]);
 	Draw.Free();
 	Client.Free();
 	return 0;

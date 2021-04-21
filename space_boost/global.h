@@ -25,10 +25,11 @@
 
 //TEXTURE RELATED....
 
-#define MAX_TEXTURES 5
+#define MAX_TEXTURES 6
 
 #define SHIP_SIZE 32
 #define BOOST_SIZE 32
+#define LOGO_SIZE 128
 
 #define SMOKE_SIZE 32
 #define SMOKE_PARTICLES 4
