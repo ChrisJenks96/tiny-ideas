@@ -339,7 +339,7 @@ int main(int argc, char** argv)
 
 					Draw.Text(HALF_SCR_WIDTH, HALF_SCR_HEIGHT + 85.0f, 16.0f, 9.0f, Client.GetIPAddrText(), Client.GetIPAddrTextLength(), true);
 					Draw.TextureUnbind();
-					Draw.Box(HALF_SCR_WIDTH - (6.8f * 16.0f), HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
+					Draw.Box(HALF_SCR_WIDTH - 120.0f, HALF_SCR_HEIGHT + 80.0f, 240.0f, 27.0f, 1.25f);
 				}
 			}
 
@@ -474,6 +474,8 @@ int main(int argc, char** argv)
 						}
 					}
 				}
+
+				Draw.Color3f(1.0f, 1.0f, 1.0f);
 			}
 
 			//Game.ShowFPS();
@@ -482,12 +484,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-	Draw.TextureFree(uiT[0]);
-	Draw.TextureFree(uiT[1]);
-	Draw.TextureFree(uiT[2]);
-	Draw.TextureFree(uiT[4]);
-	Draw.TextureFree(uiT[3]);
-	Draw.TextureFree(uiT[5]);
+	for (int i = 0; i < MAX_TEXTURES; i++)
+	{
+		Draw.TextureFree(uiT[i]);
+	}
+
 	Draw.Free();
 	Client.Free();
 	return 0;
